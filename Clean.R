@@ -13,16 +13,13 @@ download.file(url, temp, mode="wb")
 unzip(temp, "PUBLIC_DVD_DISPATCHCONSTRAINT_201904010000.CSV", exdir = location)
 #rhs.2 <- read.csv("data/rhs201904.csv", skip = 1) #old version which took spreadhseet but only the first 1048574 lines
 
+
 #Clean RHS and MV
 rhs <- read.csv("data/PUBLIC_DVD_DISPATCHCONSTRAINT_201904010000.CSV", sep=",",skip=1)
 rhs <- rhs %>% filter(MARGINALVALUE != 0) %>% #remove unconstrained
-    filter(substr(CONSTRAINTID,1,1) %in% c('Q','N','V','S','T','I')) %>% #no fcas and other weird types
-    select(SETTLEMENTDATE, CONSTRAINTID, RHS, MARGINALVALUE)
+    filter(substr(CONSTRAINTID,1,1) %in% c('Q','N','V','S','T','I')) #no fcas and other weird types
 write.csv(rhs, "data/rhs.csv")
 unlink("data/PUBLIC_DVD_DISPATCHCONSTRAINT_201904010000.CSV")#delete big csv
-
-
-
 
 
 #Constraint Equations (LHS) (make sure in long format)
