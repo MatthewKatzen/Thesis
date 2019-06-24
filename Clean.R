@@ -1,4 +1,4 @@
-setwd("C:/Users/Matthew/Google Drive/Uni/19/Thesis/Analysis/dissorderly")
+setwd("C:/Users/Matthew/Google Drive/Uni/19/Thesis/Analysis/Dissorderly Bidding")
 #install.packages('tidyverse')
 #install.packages('openxlsx')
 #install.packages('chron')
@@ -6,12 +6,20 @@ library(tidyverse)
 library(openxlsx)
 
 #Constraint RHS and MV
-rhs <- read.csv("data/rhs201904.csv", skip = 1)
+
+address <- "http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/2019/MMSDM_2019_04/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_DISPATCHCONSTRAINT_201904010000.zip"
+temp <- tempfile()
+download.file(address, temp, mode="wb")
+unzip(temp, "PUBLIC_DVD_DISPATCHCONSTRAINT_201904010000.CSV")
+rhs <- read.csv("PUBLIC_DVD_DISPATCHCONSTRAINT_201904010000.CSV", sep=",",skip=1)
 
 rhs <- rhs %>% filter(MARGINALVALUE != 0) %>% #remove unconstrained
     select(SETTLEMENTDATE, CONSTRAINTID, RHS, MARGINALVALUE) 
-    
-temp <- data %>% filter(CONSTRAINTID == "N^^V_NIL_1")
+temp <- rhs %>% filter(CONSTRAINTID == "N^^V_NIL_1")
+
+
+#rhs.2 <- read.csv("data/rhs201904.csv", skip = 1) #old version which took spreadhseet but only the first 1048574 lines
+
 
 #Constraint Equations (LHS) (make sure in long format)
 lhs <- read.csv("data/lhs201904.csv", skip = 1)
