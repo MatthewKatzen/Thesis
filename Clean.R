@@ -33,5 +33,22 @@ temp <- tempfile()
 download.file(e.url, temp, mode="wb")
 unzip(temp, paste0("PUBLIC_DVD_GENERICCONSTRAINTRHS_", effective.ym, "010000.CSV"), exdir = location)
 
-#clean
-eqs <- read.csv(paste0("data/PUBLIC_DVD_GENERICCONSTRAINTRHS_", effective, "010000.CSV"), sep=",",skip=1)
+#Clean EQS
+eqs <- read.csv(paste0("data/PUBLIC_DVD_GENERICCONSTRAINTRHS_", effective.ym, "010000.CSV"), sep=",",skip=1)
+constraint <- "S>V_NIL_SETX_SETX1" #change this to constraint name
+temp <- eqs %>% select(GENCONID, EFFECTIVEDATE, SCOPE, SPD_ID, SPD_TYPE, FACTOR, LASTCHANGED) %>% 
+    filter(SCOPE == "DS") %>% #only care about dipatch constraints 
+    filter(GENCONID == constraint) #get constraint we care about
+
+#extract only EQS for latest LATCHANGED
+t <- unique(temp$LASTCHANGED)
+if (length(t)>1){
+    temp <- temp %>% filter(LASTCHANGED == t[length(t)])
+}
+
+
+lhs <- temp %>% filter(SPD_TYPE %in% c("T","I") | SPD_ID == "Scale")
+
+
+
+### Download Bids
