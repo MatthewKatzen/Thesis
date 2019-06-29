@@ -43,9 +43,11 @@ EQS.fun <- function(constraint, effective.ym) {
         filter(SCOPE == "DS") %>% #only care about dipatch constraints 
         filter(GENCONID == constraint) %>% #get constraint we care about
         distinct() %>% #remove duplicate rows
-        filter(SPD_TYPE %in% c("T","I") | SPD_ID == "Scale") #only get scale value, interconnector, and generator/load data
-    unlink(paste0("data/PUBLIC_DVD_GENERICCONSTRAINTRHS_", yearmonth, "010000.CSV"))#delete big csv
+        filter(SPD_TYPE %in% c("T","I") | SPD_ID == "Scale") %>%  #only get scale value, interconnector, and generator/load data
+        mutate(EFFECTIVEDATE = as.character(EFFECTIVEDATE))
+    file.remove(paste0("data/PUBLIC_DVD_GENERICCONSTRAINTRHS_", effective.ym, "010000.CSV"))#delete big csv
     return(eqs)
 }
 
 ### Download Bids
+

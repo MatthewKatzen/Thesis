@@ -6,6 +6,13 @@ library(tidyverse)
 constraint <- "T>T_LIPM_110_2A"
 rhs <- read.csv("data/rhs.csv") 
 temp <- rhs %>% filter(CONSTRAINTID == "T>T_LIPM_110_2A")
-head(temp)
-lhs <- EQS.fun("T>T_LIPM_110_2A", 201904)
+
+#get dates 
+#need to convert for multiple dates
+dates <- temp$GENCONID_EFFECTIVEDATE %>% unique()#get constraint dates
+yearmonth <- paste0(substr(dates, 1, 4), substr(dates, 6, 7))
+
+lhs <- EQS.fun("T>T_LIPM_110_2A", yearmonth) 
+    
+lhs %>% filter(EFFECTIVEDATE == dates[1])
 
