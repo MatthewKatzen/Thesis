@@ -29,7 +29,6 @@ unlink(paste0("data\\PUBLIC_DVD_DISPATCHCONSTRAINT_", yearmonth, "010000.CSV"))#
 #In the future should probably create entire database
 
 EQS.fun <- function(constraint, effective.ym) {
-    effective.ym <- "201904" #change this to the date the constraint became effective
     e.year <- substr(effective.ym, 1, 4)
     e.month <- substr(effective.ym, 5, 6)
     e.url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", e.year,"/MMSDM_", e.year, "_", e.month, "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_GENERICCONSTRAINTRHS_", effective.ym, "010000.zip")
@@ -39,16 +38,14 @@ EQS.fun <- function(constraint, effective.ym) {
     unzip(temp, paste0("PUBLIC_DVD_GENERICCONSTRAINTRHS_", effective.ym, "010000.CSV"), exdir = location)
     
     #Clean EQS
-    eqs <- read.csv(paste0("data/PUBLIC_DVD_GENERICCONSTRAINTRHS_", effective.ym, "010000.CSV"), sep=",",skip=1)
-    temp <- eqs %>% select(GENCONID, EFFECTIVEDATE, SCOPE, SPD_ID, SPD_TYPE, FACTOR) %>% 
+    eqs <- read.csv(paste0("data/PUBLIC_DVD_GENERICCONSTRAINTRHS_", effective.ym, "010000.CSV"), sep=",",skip=1) %>% #load csv
+    select(GENCONID, EFFECTIVEDATE, SCOPE, SPD_ID, SPD_TYPE, FACTOR) %>% #keep cols we are interested in
         filter(SCOPE == "DS") %>% #only care about dipatch constraints 
-        filter(GENCONID == constraint) #get constraint we care about
-    
-    lhs <- temp %>% distinct() %>% #remove duplicate rows
+        filter(GENCONID == constraint) %>% #get constraint we care about
+        distinct() %>% #remove duplicate rows
         filter(SPD_TYPE %in% c("T","I") | SPD_ID == "Scale") #only get scale value, interconnector, and generator/load data
-    write.csv(lhs, "data/lhs.csv")
     unlink(paste0("data/PUBLIC_DVD_GENERICCONSTRAINTRHS_", yearmonth, "010000.CSV"))#delete big csv
-    return(lhs)
+    return(eqs)
 }
 
 ### Download Bids
