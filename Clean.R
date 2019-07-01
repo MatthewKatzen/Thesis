@@ -84,6 +84,18 @@ bids <- read.csv(paste0("data/PUBLIC_DVD_BIDPEROFFER_", yearmonth, "010000.CSV")
 temp <- bids %>% filter(DUID == "GORDON", BIDTYPE== "ENERGY") %>% 
     select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3, BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10)
 
+###MATCH ACTUAL BIDS AND BANDS 
+yearmonth <- "201905" #change this to the date the constraint became effective
+year <- substr(yearmonth, 1, 4)
+month <- substr(yearmonth, 5, 6)
+url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", year,"/MMSDM_", year, "_", month, "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_DISPATCHOFFERTRK_", yearmonth, "010000.zip")
+location <- paste0(getwd(),"/data")
+temp <- tempfile()
+download.file(url, temp, mode="wb")
+unzip(temp, paste0("PUBLIC_DVD_DISPATCHOFFERTRK_", yearmonth, "010000.CSV"), exdir = location)
+
+match <- read.csv(paste0("data/PUBLIC_DVD_DISPATCHOFFERTRK_", yearmonth, "010000.CSV"), sep=",",skip=1)
+
 
 ###DISPACTCH
 yearmonth <- "201905" #change this to the date the constraint became effective
