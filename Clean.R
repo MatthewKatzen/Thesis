@@ -6,7 +6,7 @@ library(tidyverse)
 library(openxlsx)
 library(sqldf)
 
-### Download RHS and MV
+### RHS and MV
 yearmonth <- "201905" #change this to the date the constraint became effective
 year <- substr(yearmonth, 1, 4)
 month <- substr(yearmonth, 5, 6)
@@ -50,7 +50,7 @@ EQS.fun <- function(constraint, effective.ym) {
     return(eqs)
 }
 
-### Download Bids
+###BANDS
 
 "http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/2019/MMSDM_2019_05/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_BIDDAYOFFER_201905010000.zip"
 
@@ -69,10 +69,7 @@ temp <- bands %>% filter(DUID == "GORDON", BIDTYPE== "ENERGY") %>%
 
 
 
-###Download MW per band
-
-"http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/2019/MMSDM_2019_05/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_BIDPEROFFER_201905010000.zip"
-
+###BIDS
 yearmonth <- "201905" #change this to the date the constraint became effective
 year <- substr(yearmonth, 1, 4)
 month <- substr(yearmonth, 5, 6)
@@ -82,8 +79,21 @@ temp <- tempfile()
 download.file(url, temp, mode="wb")
 unzip(temp, paste0("PUBLIC_DVD_BIDPEROFFER_", yearmonth, "010000.CSV"), exdir = location)
 
-ptm <- proc.time()
-bids <- read.csv.sql(paste0("data/PUBLIC_DVD_BIDPEROFFER_", yearmonth, "010000.CSV"), sep=",",skip=1)
-proc.time() - ptm
+bids <- read.csv(paste0("data/PUBLIC_DVD_BIDPEROFFER_", yearmonth, "010000.CSV"), sep=",",skip=1)
+
+temp <- bids %>% filter(DUID == "GORDON", BIDTYPE== "ENERGY") %>% 
+    select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3, BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10)
 
 
+###DISPACTCH
+yearmonth <- "201905" #change this to the date the constraint became effective
+year <- substr(yearmonth, 1, 4)
+month <- substr(yearmonth, 5, 6)
+url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", year,"/MMSDM_", year, "_", month, "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_DISPATCH_UNIT_SCADA_", yearmonth, "010000.zip")
+location <- paste0(getwd(),"/data")
+temp <- tempfile()
+download.file(url, temp, mode="wb")
+unzip(temp, paste0("PUBLIC_DVD_DISPATCH_UNIT_SCADA_", yearmonth, "010000.CSV"), exdir = location)
+
+dispatch <- read.csv(paste0("data/PUBLIC_DVD_DISPATCH_UNIT_SCADA_", yearmonth, "010000.CSV"), sep=",",skip=1)
+temp <- dispatch %>% filter(DUID == "GORDON")
