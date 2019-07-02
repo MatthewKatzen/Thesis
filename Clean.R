@@ -25,7 +25,7 @@ unlink(paste0("data\\PUBLIC_DVD_DISPATCHCONSTRAINT_", yearmonth, "010000.CSV"))#
 
 
 ### Download Constraint Equations (RHS) e.g. S>V_NIL_SETX_SETX1
-#for now it is a function which takes the constraint name and yearmonth it was made as inputs and ouputs
+#for now it is a function which takes the constraint name and yearmonth it was made as inputs and outputs
 #the lhs form (Scale, and T)
 #In the future should probably create entire database
 
@@ -51,7 +51,8 @@ EQS.fun <- function(constraint, effective.ym) {
 }
 
 ###BANDS
-
+#only use last band before settlement date
+#i.e. check example at end
 "http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/2019/MMSDM_2019_05/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_BIDDAYOFFER_201905010000.zip"
 
 yearmonth <- "201905" #change this to the date the constraint became effective
@@ -64,9 +65,10 @@ download.file(url, temp, mode="wb")
 unzip(temp, paste0("PUBLIC_DVD_BIDDAYOFFER_", yearmonth, "010000.CSV"), exdir = location)
 
 bands <- read.csv(paste0("data/PUBLIC_DVD_BIDDAYOFFER_", yearmonth, "010000.CSV"), sep=",",skip=1)
-temp <- bands %>% filter(DUID == "GORDON", BIDTYPE== "ENERGY") %>% 
-    select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, PRICEBAND1, PRICEBAND2, PRICEBAND3, PRICEBAND4, PRICEBAND5, PRICEBAND6, PRICEBAND7, PRICEBAND8, PRICEBAND9, PRICEBAND10, LASTCHANGED) 
-
+temp <- bands %>% filter(BIDTYPE== "ENERGY") %>% 
+    group_by(DUID, SETTLEMENTDATE) %>% 
+    filter(VERSIONNO == max(VERSIONNO)) %>% 
+    select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, PRICEBAND1, PRICEBAND2, PRICEBAND3, PRICEBAND4, PRICEBAND5, PRICEBAND6, PRICEBAND7, PRICEBAND8, PRICEBAND9, PRICEBAND10, LASTCHANGED) %>% as.data.frame() 
 
 
 ###BIDS
@@ -95,6 +97,7 @@ download.file(url, temp, mode="wb")
 unzip(temp, paste0("PUBLIC_DVD_DISPATCHOFFERTRK_", yearmonth, "010000.CSV"), exdir = location)
 
 match <- read.csv(paste0("data/PUBLIC_DVD_DISPATCHOFFERTRK_", yearmonth, "010000.CSV"), sep=",",skip=1)
+match %>% filter(DUID == "GORDON", BIDTYPE== "ENERGY") %>% head()
 
 
 ###DISPACTCH
