@@ -10,12 +10,11 @@ external.data.location <- "D:/Thesis/Data" #for big data
 
 ### RHS and MV
 RHS.fun <- function(yearmonth){
-    yearmonth <- "201905" #change this to the date the constraint became effective
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
-    url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", year,"/MMSDM_", year, "_",
-                  month, "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_DISPATCHCONSTRAINT_", yearmonth,
-                  "010000.zip")
+    url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", year,"/MMSDM_", year,
+                  "_",month, "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_DISPATCHCONSTRAINT_",
+                  yearmonth, "010000.zip")
     temp <- tempfile()
     download.file(url, temp, mode="wb") #download zip
     unzip(temp, paste0("PUBLIC_DVD_DISPATCHCONSTRAINT_", yearmonth, "010000.CSV"), 
@@ -27,7 +26,7 @@ RHS.fun <- function(yearmonth){
     rhs <- rhs %>% filter(MARGINALVALUE != 0) %>% #remove unconstrained
         filter(substr(CONSTRAINTID,1,1) %in% c('Q','N','V','S','T','I')) #no fcas and other weird types
     unlink(temp) #delete zip
-    return(rhs, "data/rhs.csv")#save locally
+    return(rhs)#save locally
 }
 
 ### Download Constraint Equations (RHS) e.g. S>V_NIL_SETX_SETX1
@@ -38,29 +37,31 @@ RHS.fun <- function(yearmonth){
 EQS.fun <- function(constraint, effective.ym) {
     e.year <- substr(effective.ym, 1, 4)
     e.month <- substr(effective.ym, 5, 6)
-    e.url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", e.year,"/MMSDM_", e.year, "_", e.month, "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_GENERICCONSTRAINTRHS_", effective.ym, "010000.zip")
+    e.url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", e.year,"/MMSDM_", 
+                    e.year, "_", e.month, "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_GENERICCONSTRAI
+                    NTRHS_", effective.ym, "010000.zip")
     location <- paste0(getwd(),"/data")
     temp <- tempfile()
     download.file(e.url, temp, mode="wb")
-    unzip(temp, paste0("PUBLIC_DVD_GENERICCONSTRAINTRHS_", effective.ym, "010000.CSV"), exdir = location)
-    
+    unzip(temp, paste0("PUBLIC_DVD_GENERICCONSTRAINTRHS_", effective.ym, "010000.CSV"), 
+          exdir = external.data.location)
     #Clean EQS
-    eqs <- read.csv(paste0("data/PUBLIC_DVD_GENERICCONSTRAINTRHS_", effective.ym, "010000.CSV"), sep=",",skip=1) %>% #load csv
+    eqs <- read.csv(paste0("data/PUBLIC_DVD_GENERICCONSTRAINTRHS_", effective.ym, "010000.CSV"), 
+                    sep=",",skip=1) %>% #load csv
     select(GENCONID, EFFECTIVEDATE, SCOPE, SPD_ID, SPD_TYPE, FACTOR) %>% #keep cols we are interested in
-        filter(SCOPE == "DS") %>% #only care about dipatch constraints 
+        filter(SCOPE == "DS") %>% #only care about dispatch constraints 
         filter(GENCONID == constraint) %>% #get constraint we care about
         distinct() %>% #remove duplicate rows
         filter(SPD_TYPE %in% c("T","I") | SPD_ID == "Scale") %>%  #only get scale value, interconnector, and generator/load data
         mutate(EFFECTIVEDATE = as.character(EFFECTIVEDATE))
-    file.remove(paste0("data/PUBLIC_DVD_GENERICCONSTRAINTRHS_", effective.ym, "010000.CSV"))#delete big csv
+    unlink(temp) #delete zip
     return(eqs)
 }
 
 ###BANDS
 #only use last band before settlement date
 #i.e. check example at end
-"http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/2019/MMSDM_2019_05/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_BIDDAYOFFER_201905010000.zip"
-
+BANDS.fun() <- function()
 yearmonth <- "201905" #change this to the date the constraint became effective
 year <- substr(yearmonth, 1, 4)
 month <- substr(yearmonth, 5, 6)
