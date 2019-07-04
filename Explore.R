@@ -4,17 +4,31 @@ setwd("C:/Users/Matthew/Google Drive/Uni/19/Thesis/Analysis/Dissordely Bidding")
 library(tidyverse)
 
 constraint <- "T>T_LIPM_110_2A"
-rhs <- read.csv("data/rhs.csv") 
-temp <- rhs %>% filter(CONSTRAINTID == constraint)
-head(temp)
-tail(temp)
+external.data.location <- "D:/Thesis/Data" #for big data
 
-#get dates 
-#need to convert for multiple dates
-dates <- temp$GENCONID_EFFECTIVEDATE %>% unique()#get constraint dates
-yearmonth <- paste0(substr(dates, 1, 4), substr(dates, 6, 7))
+#get all rhs values
+rhs <- rhs.fun("201905")
+write.csv(rhs, "data/rhs.csv")
 
-lhs <- EQS.fun("T>T_LIPM_110_2A", yearmonth) 
-    
-lhs %>% filter(EFFECTIVEDATE == dates[1])
+# get lhs equation
+eqs <- eqs.fun("T>T_LIPM_110_2A", "201904")
+write.csv(eqs, "data/eqs.csv")
 
+#bands
+bands <- bands.fun("201905")
+write.csv(bands, "data/bands.csv")
+
+#bids
+bids <- bids.fun("201905", "2019/05/10 00:00:00", "LK_ECHO")
+write.csv(bids, "data/bids.csv")
+
+#dispatch
+dispatch <- dispatch.fun("201905", "2019/05/10", "LK_ECHO")
+write.csv(dispatch, "data/dispatch.csv")
+
+
+rhs %>% filter(CONSTRAINTID == constraint) %>% head()
+eqs
+bands %>% filter(DUID == "LK_ECHO")
+bids
+dispatch %>% head()
