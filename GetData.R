@@ -8,24 +8,24 @@ external.data.location <- "D:/Thesis/Data" #for big data
 
 ### GET DATA
 #get all rhs values
-rhs <- rhs.fun("201905")
-write.csv(rhs, "data/rhs.csv")
+rhs <- rhs.fun("201701")
+write.csv(rhs, "data/201701rhs.csv")
 
 # get lhs equation
-eqs <- eqs.fun("T>T_LIPM_110_2A", "201904")
-write.csv(eqs, "data/eqs.csv")
+# eqs <- eqs.fun("T>T_LIPM_110_2A", "201904")
+# write.csv(eqs, "data/eqs.csv")
 
 #bands
-bands <- bands.fun("201905")
-write.csv(bands, "data/bands.csv")
+bands <- bands.fun("201701")
+write.csv(bands, "data/201701bands.csv")
 
 #bids
-bids <- bids.fun("201905", "2019/05/10 00:00:00", "LK_ECHO")
-write.csv(bids, "data/bids.csv")
+bids <- bids.fun("201701", "2017/01/10 00:00:00", "LK_ECHO")
+write.csv(bids, "data/201701bids.csv")
 
 #dispatch
-dispatch <- dispatch.fun("201905", "2019/05/10", "LK_ECHO")
-write.csv(dispatch, "data/dispatch.csv")
+dispatch <- dispatch.fun("201701", "2017/01/10", "LK_ECHO")
+write.csv(dispatch, "data/201701dispatch.csv")
 
 
 ### EXPLORE
