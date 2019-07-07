@@ -6,6 +6,7 @@ library(tidyverse)
 constraint <- "T>T_LIPM_110_2A"
 external.data.location <- "D:/Thesis/Data" #for big data
 
+### GET DATA
 #get all rhs values
 rhs <- rhs.fun("201905")
 write.csv(rhs, "data/rhs.csv")
@@ -27,8 +28,9 @@ dispatch <- dispatch.fun("201905", "2019/05/10", "LK_ECHO")
 write.csv(dispatch, "data/dispatch.csv")
 
 
+### EXPLORE
 rhs %>% filter(CONSTRAINTID == constraint) %>% head()
 eqs
-bands %>% filter(DUID == "LK_ECHO")
-bids
+bands %>% filter(DUID == "LK_ECHO") %>% head()
+bids %>% head()
 dispatch %>% head()
