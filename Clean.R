@@ -8,6 +8,7 @@ setwd("C:/Users/Matthew/Google Drive/Uni/19/Thesis/Analysis/Dissordely Bidding")
 external.data.location <- "D:/Thesis/Data" #for big data
 
 ### RHS and MV
+#gets rhs and values for one month period
 rhs.fun <- function(yearmonth){
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
@@ -146,6 +147,7 @@ bids.fun <- function(yearmonth = "201905", date = "2019/05/10",generator){
 
 
 ###DISPACTCH
+#gets one day of dispatch for one generator
 dispatch.fun <- function(yearmonth, date = "2019-05-10", generator){
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
