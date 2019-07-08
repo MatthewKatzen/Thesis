@@ -103,7 +103,7 @@ bands.fun <- function(yearmonth){
 ###BIDS
 #for now it just takes th elast bid file for each day. 
 #Note that the file can be altered throughout the day.
-bids.fun <- function(yearmonth = "201905", date = "2019/05/10",generator){
+bids.fun <- function(yearmonth = "201905",generator){
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
     url <- 0
@@ -120,7 +120,6 @@ bids.fun <- function(yearmonth = "201905", date = "2019/05/10",generator){
     }
     bids <- read.csv(csv.name, sep=",",skip=1)
     bids <- bids %>% filter(DUID == generator, BIDTYPE== "ENERGY") %>%
-        filter(as.Date(SETTLEMENTDATE) == date) %>% #only look at 5/10 (US dates)
         filter(VERSIONNO == max((VERSIONNO))) %>% #get last version of bid file used
         select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, PERIODID, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3,
                BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10)

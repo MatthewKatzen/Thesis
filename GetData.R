@@ -20,11 +20,11 @@ bands <- bands.fun("201701")
 write.csv(bands, "data/201701bands.csv")
 
 #bids
-bids <- bids.fun("201701", "2017/01/10 00:00:00", "LK_ECHO")
+bids <- bids.fun("201701", "HWPS1")
 write.csv(bids, "data/201701bids.csv")
 
 #dispatch
-dispatch <- dispatch.fun("201701", "2017/01/10", "LK_ECHO")
+dispatch <- dispatch.fun("201701", "2017/01/10", "HWPS1")
 write.csv(dispatch, "data/201701dispatch.csv")
 
 
