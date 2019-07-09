@@ -190,3 +190,53 @@ dispatch.fun <- function(yearmonth, generator){
     }    
     return(dispatch)
 }
+
+### MAX BAND
+#get the max band used in dispatch. This is essentially the gens bid
+#Note: Since some files start at 4am and others at 12am, the file only goes from 4am-12am
+maxband.fun <- function(bids, dispatch, bands){
+    bids <- bids %>% select(MAXAVAIL, BANDAVAIL1, 
+                            BANDAVAIL2, BANDAVAIL3, BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8,
+                            BANDAVAIL9, BANDAVAIL10, INTERVAL_DATETIME) 
+    
+    dispatch <- dispatch %>% select(INTERVAL_DATETIME = SETTLEMENTDATE, TOTALCLEARED)
+    bands <- bands %>% select(PRICEBAND1, PRICEBAND2, PRICEBAND3, PRICEBAND4, PRICEBAND5, PRICEBAND6, 
+                              PRICEBAND7, PRICEBAND8, PRICEBAND9, PRICEBAND10)
+    
+    temp4 <- merge(dispatch, bids, by = 'INTERVAL_DATETIME')
+    
+    for (i in 1:nrow(temp4)){
+        j <- 4
+        while ((sum(temp4[i, 4:j]) < temp4[i,2]) & (j<=12)) {#find col where colsum > maxavail
+            j <- j + 1
+        }
+        temp4[i, 'MAXBAND']<-bands[1,j-3]
+    }
+    return(temp4)
+}
+
+###RRP
+#gets one day of dispatch for one generator
+rrp.fun <- function(yearmonth){
+    year <- substr(yearmonth, 1, 4)
+    month <- substr(yearmonth, 5, 6)
+    url <- 0
+    csv.name <- paste0(external.data.location, "/PUBLIC_DVD_DISPATCHPRICE_", yearmonth, "010000.CSV")
+    if(!file.exists(csv.name)){
+        url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", year,"/MMSDM_", 
+                      year, "_", month, 
+                      "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_DISPATCHPRICE_",yearmonth,
+                      "010000.zip")
+        temp <- tempfile()
+        download.file(url, temp, mode="wb")
+        unzip(temp, paste0("PUBLIC_DVD_DISPATCHPRICE_", yearmonth, "010000.CSV"),
+              exdir = external.data.location)
+    }
+    rrp.fun <- read.csv(csv.name, sep=",", skip=1) %>% 
+        select("SETTLEMENTDATE", "REGIONID", "RRP")
+    
+    if(url != 0){
+        unlink(temp) #delete zip
+    }    
+    return(rrp.fun)
+}
