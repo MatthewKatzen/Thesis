@@ -80,7 +80,7 @@ bands.fun <- function(yearmonth){
     url <- 0
     if(!file.exists(csv.name)){
         url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", year,"/MMSDM_", 
-                      year,"_", month, "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_BIDDAYOFFER_",
+                      year,"_", month, "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_BIDDAYOFFER_D_",
                       yearmonth,"010000.zip")
         temp <- tempfile()
         download.file(url, temp, mode="wb")
@@ -103,30 +103,50 @@ bands.fun <- function(yearmonth){
 ###BIDS
 #for now it just takes th elast bid file for each day. 
 #Note that the file can be altered throughout the day.
-bids.fun <- function(yearmonth = "201905",generator){
+bids.fun <- function(yearmonth, generator){
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
     url <- 0
-    csv.name <- paste0(external.data.location, "/PUBLIC_DVD_BIDPEROFFER_", yearmonth, "010000.CSV")
+    csv.name <- paste0(external.data.location, "/PUBLIC_DVD_BIDPEROFFER_D_", yearmonth, "010000.CSV")
     if(!file.exists(csv.name)){
         url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", year,"/MMSDM_",
-                      year,"_", month, "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_BIDPEROFFER_",
+                      year,"_", month, "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_BIDPEROFFER_D_",
                       yearmonth,
                       "010000.zip")
         temp <- tempfile()
         download.file(url, temp, mode="wb")
-        unzip(temp, paste0("PUBLIC_DVD_BIDPEROFFER_", yearmonth, "010000.CSV"), 
+        unzip(temp, paste0("PUBLIC_DVD_BIDPEROFFER_D_", yearmonth, "010000.CSV"), 
               exdir = external.data.location)
     }
     bids <- read.csv(csv.name, sep=",",skip=1)
-    bids <- bids %>% filter(DUID == generator, BIDTYPE== "ENERGY") %>%
-        filter(VERSIONNO == max((VERSIONNO))) %>% #get last version of bid file used
-        select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, PERIODID, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3,
-               BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10)
+    bids <- bids %>% filter(DUID == generator, BIDTYPE== "ENERGY") #%>%
+        #group_by(SETTLEMENTDATE) %>% 
+        #filter(VERSIONNO == max((VERSIONNO))) %>% #get last version of bid file used
+        #select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, PERIODID, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3,
+               #BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10)
     if(url != 0){
         unlink(temp) #delete zip
-    }    
-    return(bids)
+    } 
+    return(as.data.frame(bids))
+}
+#for some reason bids can exceed the maxavail, therefore need to cut bids off at that point
+fixbid.fun <- function(data){
+    temp <- data %>% select(MAXAVAIL, BANDAVAIL1, 
+                            BANDAVAIL2, BANDAVAIL3, BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8,
+                            BANDAVAIL9, BANDAVAIL10) %>% head()
+    for (i in 1:nrow(temp)){
+        j <- 2
+        while ((sum(temp[i, 2:j]) < temp[i,1]) & (j<=10)) {
+            j <- j + 1
+        }
+        temp[i,j] <- min(temp[i,1] - sum(temp[i, 2:(j-1)]), temp[i,j])
+        
+        if (j <=10){
+            temp[i,c((j+1):ncol(temp))] <- 0
+        }
+    }
+    data[,colnames(temp)] <- temp
+    return(data)
 }
     
 ###MATCH ACTUAL BIDS USED 
