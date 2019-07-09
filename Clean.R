@@ -133,19 +133,19 @@ bids.fun <- function(yearmonth, generator){
 fixbid.fun <- function(data){
     temp <- data %>% select(MAXAVAIL, BANDAVAIL1, 
                             BANDAVAIL2, BANDAVAIL3, BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8,
-                            BANDAVAIL9, BANDAVAIL10) %>% head()
+                            BANDAVAIL9, BANDAVAIL10)
     for (i in 1:nrow(temp)){
         j <- 2
-        while ((sum(temp[i, 2:j]) < temp[i,1]) & (j<=10)) {
+        while ((sum(temp[i, 2:j]) < temp[i,1]) & (j<=10)) {#find col where colsum > maxavail
             j <- j + 1
         }
-        temp[i,j] <- min(temp[i,1] - sum(temp[i, 2:(j-1)]), temp[i,j])
+        temp[i,j] <- min(abs(temp[i,1] - sum(temp[i, 2:(j-1)])), temp[i,j], temp[i,1]) #fix last col to not exceed maxail
         
         if (j <=10){
-            temp[i,c((j+1):ncol(temp))] <- 0
+            temp[i,c((j+1):ncol(temp))] <- 0 #make leftover cols zero
         }
     }
-    data[,colnames(temp)] <- temp
+    data[,colnames(temp)] <- temp #add back into original data
     return(data)
 }
     
@@ -167,26 +167,24 @@ fixbid.fun <- function(data){
 
 ###DISPACTCH
 #gets one day of dispatch for one generator
-dispatch.fun <- function(yearmonth, date = "2019-05-10", generator){
+dispatch.fun <- function(yearmonth, generator){
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
     url <- 0
-    csv.name <- paste0(external.data.location, "/PUBLIC_DVD_DISPATCH_UNIT_SCADA_", yearmonth, "010000.CSV")
+    csv.name <- paste0(external.data.location, "/PUBLIC_DVD_DISPATCHLOAD_", yearmonth, "010000.CSV")
     if(!file.exists(csv.name)){
         url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", year,"/MMSDM_", 
                       year, "_", month, 
-                      "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_DISPATCH_UNIT_SCADA_",yearmonth,
+                      "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_DISPATCHLOAD_",yearmonth,
                       "010000.zip")
         temp <- tempfile()
         download.file(url, temp, mode="wb")
-        unzip(temp, paste0("PUBLIC_DVD_DISPATCH_UNIT_SCADA_", yearmonth, "010000.CSV"),
+        unzip(temp, paste0("PUBLIC_DVD_DISPATCHLOAD_", yearmonth, "010000.CSV"),
               exdir = external.data.location)
     }
-    dispatch <- read.csv(paste0(external.data.location, "/PUBLIC_DVD_DISPATCH_UNIT_SCADA_", yearmonth,
-                                "010000.CSV"), 
-                         sep=",",skip=1)
+    dispatch <- read.csv(csv.name, sep=",", skip=1)
     dispatch <- dispatch %>% filter(DUID == generator) %>% 
-        filter(as.Date(SETTLEMENTDATE) == date)
+        select(DUID, SETTLEMENTDATE, TOTALCLEARED)
     if(url != 0){
         unlink(temp) #delete zip
     }    

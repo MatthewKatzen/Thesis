@@ -16,39 +16,50 @@ p2 <- ggplot(rhs %>% mutate(SETTLEMENTDATE = as.POSIXct(strftime(as.POSIXct(SETT
     geom_bar()
 
 
-#t test constrained price at gen v unconstrained
+###t test constrained price at gen v unconstrained
 #problem: only looking at one constraint, may be included in multiple constraints
 #V>>V_NIL_2A_R
 eqs <- eqs.fun("V>>V_NIL_2A_R", "201606")
 eqs[2,"SPD_ID"]
 
-bids <- bids.fun("201701", "HWPS1")
+#get bids
+bids <- bids.fun("201701", "YWPS1")
 
-temp <- bids %>% filter(SETTLEMENTDATE == "2017/01/02 00:00:00") %>% 
+bids.temp <- bids %>% filter(SETTLEMENTDATE == "2017/01/02 00:00:00") %>% 
     select(DUID, SETTLEMENTDATE, INTERVAL_DATETIME, OFFERDATE, VERSIONNO, PERIODID, MAXAVAIL, BANDAVAIL1, 
            BANDAVAIL2, BANDAVAIL3, BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, 
-           BANDAVAIL10)
+           BANDAVAIL10) %>% fixbid.fun()
 
-#fix where bids > max avail (cap at max avail)
-temp2 <- data.frame(matrix(c(sample(90:110, 10),sample(5:15, 100, replace = TRUE)), nrow = 10, ncol = 11))
-temp2
+#get dispatch amount
+dispatch <- dispatch.fun("201701", "YWPS1")
+dispatch.temp <- dispatch %>% filter(as.Date(SETTLEMENTDATE) == "2017/01/02")
 
-fixbid.fun <- function(data){
-    temp <- data %>% select(MAXAVAIL, BANDAVAIL1, 
-                             BANDAVAIL2, BANDAVAIL3, BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8,
-                             BANDAVAIL9, BANDAVAIL10) %>% head()
-    for (i in 1:nrow(temp)){
-        j <- 2
-        while ((sum(temp[i, 2:j]) < temp[i,1]) & (j<=10)) {
+#get bands
+bands <- bands.fun("201701")
+bands.temp <- bands %>% filter(DUID == "YWPS1", SETTLEMENTDATE == "2017/01/02 00:00:00")
+
+#get max band used
+maxband.fun <- function(bids, dispatch, bands){
+    bids <- bids %>% select(MAXAVAIL, BANDAVAIL1, 
+                            BANDAVAIL2, BANDAVAIL3, BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8,
+                            BANDAVAIL9, BANDAVAIL10, INTERVAL_DATETIME) 
+    
+    dispatch <- dispatch %>% select(INTERVAL_DATETIME = SETTLEMENTDATE, TOTALCLEARED)
+    bands <- bands %>% select(PRICEBAND1, PRICEBAND2, PRICEBAND3, PRICEBAND4, PRICEBAND5, PRICEBAND6, 
+                              PRICEBAND7, PRICEBAND8, PRICEBAND9, PRICEBAND10)
+    
+    temp4 <- merge(dispatch, bids, by = 'INTERVAL_DATETIME')
+    
+    for (i in 1:nrow(temp4)){
+        j <- 4
+        while ((sum(temp4[i, 4:j]) < temp4[i,2]) & (j<=12)) {#find col where colsum > maxavail
             j <- j + 1
         }
-        temp[i,j] <- min(temp[i,1] - sum(temp[i, 2:(j-1)]), temp[i,j])
-        
-        if (j <=10){
-            temp[i,c((j+1):ncol(temp))] <- 0
-        }
+        temp4[i, 'MAXBAND']<-bands[1,j-3]
     }
-    return(temp)
+    return(temp4)
 }
-fixbid.fun(temp2)
 
+temp4 %>% head()
+
+maxband.fun(bids.temp, dispatch.temp, bands.temp) %>% tail()
