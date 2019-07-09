@@ -1,3 +1,8 @@
+#First exploration of DB as well as looking at a particular case
+install.packages("lubridate")
+library(lubridate)
+library(tidyverse)
+
 #total constraints in may
 rhs <- read.csv("data/201701rhs.csv")
 
@@ -32,14 +37,17 @@ bids.temp <- bids %>% filter(SETTLEMENTDATE == "2017/01/02 00:00:00") %>%
 
 #get dispatch amount
 dispatch <- dispatch.fun("201701", "YWPS1")
-dispatch.temp <- dispatch %>% filter(as.Date(SETTLEMENTDATE) == "2017/01/02")
+fromdate <- as.POSIXct("2017/01/02 04:05:00")
+todate <- as.POSIXct("2017/01/03 04:00:00")
+int <- interval(fromdate, todate)
+dispatch.temp <- dispatch %>% filter(as.POSIXct(SETTLEMENTDATE) %within% int)
 
 #get bands
 bands <- bands.fun("201701")
 bands.temp <- bands %>% filter(DUID == "YWPS1", SETTLEMENTDATE == "2017/01/02 00:00:00")
 
 #get max band used
-maxband <- maxband.fun(bids.temp, dispatch.temp, bands.temp) 
+maxband <- maxband.fun(bids.temp, dispatch.temp, bands.temp)
 
 #get RRP
 rrp <- rrp.fun("201701") 
