@@ -39,27 +39,17 @@ bands <- bands.fun("201701")
 bands.temp <- bands %>% filter(DUID == "YWPS1", SETTLEMENTDATE == "2017/01/02 00:00:00")
 
 #get max band used
-maxband.fun <- function(bids, dispatch, bands){
-    bids <- bids %>% select(MAXAVAIL, BANDAVAIL1, 
-                            BANDAVAIL2, BANDAVAIL3, BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8,
-                            BANDAVAIL9, BANDAVAIL10, INTERVAL_DATETIME) 
-    
-    dispatch <- dispatch %>% select(INTERVAL_DATETIME = SETTLEMENTDATE, TOTALCLEARED)
-    bands <- bands %>% select(PRICEBAND1, PRICEBAND2, PRICEBAND3, PRICEBAND4, PRICEBAND5, PRICEBAND6, 
-                              PRICEBAND7, PRICEBAND8, PRICEBAND9, PRICEBAND10)
-    
-    temp4 <- merge(dispatch, bids, by = 'INTERVAL_DATETIME')
-    
-    for (i in 1:nrow(temp4)){
-        j <- 4
-        while ((sum(temp4[i, 4:j]) < temp4[i,2]) & (j<=12)) {#find col where colsum > maxavail
-            j <- j + 1
-        }
-        temp4[i, 'MAXBAND']<-bands[1,j-3]
-    }
-    return(temp4)
-}
+maxband <- maxband.fun(bids.temp, dispatch.temp, bands.temp) 
 
-temp4 %>% head()
+#get RRP
+rrp <- rrp.fun("201701") 
+rrp.temp<- rrp %>% filter(REGIONID == "VIC1") %>% 
+    filter(as.Date(SETTLEMENTDATE) == "2017/01/02") %>% 
+    .[50:288,]
 
-maxband.fun(bids.temp, dispatch.temp, bands.temp) %>% tail()
+
+#t-test
+t.test(maxband$MAXBAND, rrp.temp$RRP, paired = TRUE)
+
+qplot(maxband$MAXBAND)#not normally distibuted
+qplot(rrp.temp$RRP)#somewhat normally distributed
