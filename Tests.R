@@ -1,5 +1,17 @@
 ###t test constrained price at gen v unconstrained
 #problem: only looking at one constraint, may be included in multiple constraints
+
+#find interesting event 
+
+rhs %>% 
+    select(CONSTRAINTID) %>% 
+    mutate(CONSTRAINTID = as.character(CONSTRAINTID)) %>% 
+    table() %>% sort(decreasing = TRUE)
+
+
+
+
+
 #V>>V_NIL_2A_R
 eqs <- eqs.fun("V>>V_NIL_2A_R", "201606")
 eqs[2,"SPD_ID"]
