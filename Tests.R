@@ -2,6 +2,11 @@
 #problem: only looking at one constraint, may be included in multiple constraints
 
 #find interesting event 
+#few lhs generators
+#mix of types 
+#not all owned by same operator
+#no wind
+#binds consistently over a period
 
 rhs %>% 
     select(CONSTRAINTID) %>% 
@@ -10,11 +15,21 @@ rhs %>%
 
 
 
+#T>T_TUNN3_110_1 
 
 
-#V>>V_NIL_2A_R
-eqs <- eqs.fun("V>>V_NIL_2A_R", "201606")
-eqs[2,"SPD_ID"]
+
+
+#check if always the same equation
+rhs1 %>% filter(CONSTRAINTID == "T>T_LIPM_110_2A") %>% 
+    transmute(GENCONID_EFFECTIVEDATE = as.character(GENCONID_EFFECTIVEDATE)) %>% 
+    table() #yes :)
+
+eqs <- eqs.fun("T>T_NIL_110_1", "201403") 
+    
+#get bidnding events
+rhs.temp <- rhs %>% filter(CONSTRAINTID == "T>T_TUNN3_110_1")
+
 
 #get bids
 bids <- bids.fun("201701", "YWPS1")
@@ -52,4 +67,6 @@ qplot(maxband$MAXBAND)#not normally distibuted
 qplot(rrp.temp$RRP)#somewhat normally distributed
 
 ### TEST 2
+
+
 

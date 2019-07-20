@@ -240,3 +240,20 @@ rrp.fun <- function(yearmonth){
     }    
     return(rrp.fun)
 }
+
+loop.fun <- function(fun,...){
+    vars <- as.character(as.list(match.call()))[-1]
+    
+    temp2 <- paste0(vars[-1], sep = ",", collapse = "")
+    temp2 <- substr(temp2, 1, (nchar(temp2)-1))
+    fun <- paste0(vars[1],"(",temp2,")")
+    eval(parse(text = fun))
+}
+
+temp <- function(fun,...){
+    vars <- as.character(as.list(match.call()))[-1]
+    vars
+}
+a <- c(1:3)
+b <- c("hi","bi")
+temp(a,b)

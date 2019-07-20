@@ -17,6 +17,8 @@ rhs <- rhs.fun("201701") %>% rbind(rhs.fun("201702")) %>%
     rbind(rhs.fun("201712"))  
 write.csv(rhs, "data/2017rhs.csv") 
 
+
+
 rhs <- read.csv("data/2017rhs.csv") %>% 
     filter(grepl(">", CONSTRAINTID)) %>% #only thermal constraints
     mutate(CONSTRAINTID = as.character(CONSTRAINTID)) %>% #convert to character to get rid of unused levels
