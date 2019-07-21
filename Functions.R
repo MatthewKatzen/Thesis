@@ -27,7 +27,7 @@ rhs.fun <- function(yearmonth){
               exdir = external.data.location) #unzip[ zipped file and save csv to external storage
     }
     #Clean RHS and MV
-    rhs <- read.csv(csv.name, sep=",",skip=1)
+    rhs <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
     rhs <- rhs %>% filter(MARGINALVALUE != 0) %>% #remove unconstrained
         filter(substr(CONSTRAINTID,1,1) %in% c('Q','N','V','S','T','I')) #no fcas and other weird types
     if(url != 0){
@@ -57,7 +57,7 @@ eqs.fun <- function(constraint, effective.ym) {
               exdir = external.data.location)
     }
     #Clean EQS
-    eqs <- read.csv(csv.name, sep=",",skip=1) %>% #load csv
+    eqs <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE) %>% #load csv
         select(GENCONID, EFFECTIVEDATE, SCOPE, SPD_ID, SPD_TYPE, FACTOR) %>% #keep cols we are interested in
         filter(SCOPE == "DS") %>% #only care about dispatch constraints 
         filter(GENCONID == constraint) %>% #get constraint we care about
@@ -87,7 +87,7 @@ bands.fun <- function(yearmonth){
         unzip(temp, paste0("PUBLIC_DVD_BIDDAYOFFER_", yearmonth, "010000.CSV"), 
               exdir = external.data.location)
     }
-    bands <- read.csv(csv.name, sep=",",skip=1)
+    bands <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
     bands <- bands %>% filter(BIDTYPE== "ENERGY") %>% 
         group_by(DUID, SETTLEMENTDATE) %>% 
         filter(VERSIONNO == max(VERSIONNO)) %>% 
@@ -107,6 +107,33 @@ bids.fun <- function(yearmonth, generator){
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
     url <- 0
+    csv.name <- paste0(external.data.location, "/PUBLIC_DVD_BIDPEROFFER_", yearmonth, "010000.CSV")
+    if(!file.exists(csv.name)){
+        url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", year,"/MMSDM_",
+                      year,"_", month, "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_BIDPEROFFER_",
+                      yearmonth,
+                      "010000.zip")
+        temp <- tempfile()
+        download.file(url, temp, mode="wb")
+        unzip(temp, paste0("PUBLIC_DVD_BIDPEROFFER_", yearmonth, "010000.CSV"), 
+              exdir = external.data.location)
+    }
+    bids <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
+    bids <- bids %>% filter(DUID == generator)#, BIDTYPE== "ENERGY") #%>%
+        #group_by(SETTLEMENTDATE) %>% 
+        #filter(VERSIONNO == max((VERSIONNO))) %>% #get last version of bid file used
+        #select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, PERIODID, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3,
+               #BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10)
+    if(url != 0){
+        unlink(temp) #delete zip
+    } 
+    return(as.data.frame(bids))
+}
+
+bids_d.fun <- function(yearmonth, generator){
+    year <- substr(yearmonth, 1, 4)
+    month <- substr(yearmonth, 5, 6)
+    url <- 0
     csv.name <- paste0(external.data.location, "/PUBLIC_DVD_BIDPEROFFER_D_", yearmonth, "010000.CSV")
     if(!file.exists(csv.name)){
         url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", year,"/MMSDM_",
@@ -118,17 +145,18 @@ bids.fun <- function(yearmonth, generator){
         unzip(temp, paste0("PUBLIC_DVD_BIDPEROFFER_D_", yearmonth, "010000.CSV"), 
               exdir = external.data.location)
     }
-    bids <- read.csv(csv.name, sep=",",skip=1)
-    bids <- bids %>% filter(DUID == generator, BIDTYPE== "ENERGY") #%>%
-        #group_by(SETTLEMENTDATE) %>% 
-        #filter(VERSIONNO == max((VERSIONNO))) %>% #get last version of bid file used
-        #select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, PERIODID, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3,
-               #BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10)
+    bids <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
+    bids <- bids %>% filter(DUID == generator)#, BIDTYPE== "ENERGY") #%>%
+    #group_by(SETTLEMENTDATE) %>% 
+    #filter(VERSIONNO == max((VERSIONNO))) %>% #get last version of bid file used
+    #select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, PERIODID, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3,
+    #BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10)
     if(url != 0){
         unlink(temp) #delete zip
     } 
     return(as.data.frame(bids))
 }
+
 #for some reason bids can exceed the maxavail, therefore need to cut bids off at that point
 fixbid.fun <- function(data){
     temp <- data %>% select(MAXAVAIL, BANDAVAIL1, 
@@ -182,7 +210,7 @@ dispatch.fun <- function(yearmonth, generator){
         unzip(temp, paste0("PUBLIC_DVD_DISPATCHLOAD_", yearmonth, "010000.CSV"),
               exdir = external.data.location)
     }
-    dispatch <- read.csv(csv.name, sep=",", skip=1)
+    dispatch <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
     dispatch <- dispatch %>% filter(DUID == generator) %>% 
         select(DUID, SETTLEMENTDATE, TOTALCLEARED)
     if(url != 0){
@@ -232,7 +260,7 @@ rrp.fun <- function(yearmonth){
         unzip(temp, paste0("PUBLIC_DVD_DISPATCHPRICE_", yearmonth, "010000.CSV"),
               exdir = external.data.location)
     }
-    rrp.fun <- read.csv(csv.name, sep=",", skip=1) %>% 
+    rrp.fun <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE) %>% 
         select("SETTLEMENTDATE", "REGIONID", "RRP")
     
     if(url != 0){
@@ -250,10 +278,3 @@ loop.fun <- function(fun,...){
     eval(parse(text = fun))
 }
 
-temp <- function(fun,...){
-    vars <- as.character(as.list(match.call()))[-1]
-    vars
-}
-a <- c(1:3)
-b <- c("hi","bi")
-temp(a,b)
