@@ -38,23 +38,7 @@ gens <- eqs %>% filter(FACTOR > 0) %>% #remove negetive factored generators (don
 rhs.temp <- rhs %>% filter(CONSTRAINTID == "T>T_TUNN3_110_1")
 
 #find long stretch of trues
-temp <- as.POSIXct(rhs.temp$SETTLEMENTDATE)[50:100]
-qplot(temp)
-
-temp2 <- seq.POSIXt(temp[1], temp[length(temp)], by = "5 min")
-temp3 <- rle(temp2 %in% (temp))
-temp4 <- which(temp3$values==TRUE & temp3$lengths>25)
-
-
-for (i in 1:length(temp4)){
-    start <- sum(temp3$lengths[1:(temp4[i]-1)][temp3$values[1:(temp4[i]-1)]==T])+1
-    end <- start + temp3$lengths[temp4[i]] - 1
-    print(interval(temp[start], temp[end]))
-}
-
-
-start <- sum(temp3$lengths[1:(temp4[1]-1)][temp3$values[1:(temp4[1]-1)]==T])+1
-end <- start + temp3$lengths[temp4[1]] - 1
+int <- constrained.fun(rhs.temp$SETTLEMENTDATE, 25)
 
 
 qplot(temp[start:end])
@@ -81,18 +65,43 @@ bids_d.temp <- bids_d %>% filter(SETTLEMENTDATE == "2017/04/28 00:00:00", BIDTYP
            BANDAVAIL10)
 
 #check if any offers occured whilst binding
-
-temp6 <- bids.temp$OFFERDATE %>% unique() %>% as.POSIXct()
-bind <- interval(temp[58],temp[87])
-temp6 %within% bind
-
-
-
+temp6 <- bids.temp$OFFERDATE %>% unique() %>% as.POSIXct()#rebid times
+c.datetime <- temp6[temp6 %within% int]#rebids occuring whilst constrained
+map(temp6, .%within% int)
+any(temp6 %within% int)
+temp6 %within% int
 
 
+c.gen <- bids.temp %>% filter(as.POSIXct(OFFERDATE) %in% c.datetime) %>% select(DUID) %>% unique() %>% 
+    as.character#get gens that rebid when constrained
+rebid <- bids.temp %>% filter(DUID == c.gen) %>% select(OFFERDATE) %>% 
+    unique() %>% .[,'OFFERDATE'] %>% as.POSIXct() #get rebids of gens that rebid when constrained
 
-#convert 30 min ot 5 min
-#sort(rep(1:nrow(bids.temp), 6))[1:nrow(bids.temp)]
+c.rects <- data.frame(start = int_start(int)[1:2], end = int_end(int)[1:2], group=seq_along(start))
+day.rects <- data.frame(start = c.rects[1,1] - 60*60*(hour(c.rects[1,1]) - 4) - 60*(minute(c.rects[1,1]) - 5),
+                        end = c.rects[1,1] - 60*60*(hour(c.rects[1,1]) - 28) - 60*(minute(c.rects[1,1]) - 5))
+
+p6 <- ggplot() +
+    geom_vline(xintercept = rebid) +
+    geom_rect(c.rects, mapping = aes(xmin = start, xmax = end, ymin = 0, ymax = 1, alpha = "Binding", fill = "Binding")) +
+    geom_rect(day.rects, mapping = aes(xmin = start, xmax = end, ymin = 0, ymax = 1, alpha = "Day", fill = "Day"))+
+    scale_x_datetime(limits = (range(rebid, c.rects$start, c.rects$end, day.rects$start, day.rects$end)))+
+    scale_fill_manual(values = c("Binding" = "red", "Day" = "blue"))+
+    scale_alpha_manual(values = c("Binding" = 0.5, "Day" = 0.1))
+    
+p6
+
+#compare rebid to previous one
+bids.temp %>% filter(DUID == c.gen) %>% select(OFFERDATE) %>% unique()
+bids.temp %>% filter(DUID == c.gen, OFFERDATE == c.datetime) %>% maxband.fun()
+bids.temp %>% filter(DUID == c.gen, OFFERDATE == c.datetime) %>% maxband.fun()
+
+
+
+
+
+
+
 
 
 #get dispatch amount

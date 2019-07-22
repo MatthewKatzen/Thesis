@@ -48,7 +48,7 @@ constrained.fun <- function(datetimes, len_con){
         end <- start + temp3$lengths[temp4[i]] - 1
         int[[i]] <- interval(temp[start], temp[end])
     }
-    return(int)
+    return(do.call("c", int))#return int in better form
 }
 
 ### EQS
