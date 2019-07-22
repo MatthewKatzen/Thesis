@@ -36,6 +36,21 @@ rhs.fun <- function(yearmonth){
     return(rhs)#save locally
 }
 
+#find interval for which rhs is constrained for atleast `len_con` periods
+constrained.fun <- function(datetimes, len_con){
+    temp <- as.POSIXct(datetimes)
+    temp2 <- seq.POSIXt(temp[1], temp[length(temp)], by = "5 min")
+    temp3 <- rle(temp2 %in% (temp))
+    temp4 <- which(temp3$values==TRUE & temp3$lengths > 25)
+    int <- list()
+    for (i in 1:length(temp4)){
+        start <- sum(temp3$lengths[1:(temp4[i]-1)][temp3$values[1:(temp4[i]-1)]==T])+1
+        end <- start + temp3$lengths[temp4[i]] - 1
+        int[[i]] <- interval(temp[start], temp[end])
+    }
+    return(int)
+}
+
 ### EQS
 #for now it is a function which takes the constraint name and yearmonth it was made as inputs and outputs
 #the lhs form (Scale, and T)
@@ -103,7 +118,7 @@ bands.fun <- function(yearmonth){
 ###BIDS
 #for now it just takes th elast bid file for each day. 
 #Note that the file can be altered throughout the day.
-bids.fun <- function(yearmonth, generator){
+bids.fun <- function(yearmonth, generators){
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
     url <- 0
@@ -119,11 +134,10 @@ bids.fun <- function(yearmonth, generator){
               exdir = external.data.location)
     }
     bids <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
-    bids <- bids %>% filter(DUID == generator)#, BIDTYPE== "ENERGY") #%>%
-        #group_by(SETTLEMENTDATE) %>% 
-        #filter(VERSIONNO == max((VERSIONNO))) %>% #get last version of bid file used
-        #select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, PERIODID, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3,
-               #BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10)
+    bids <- bids %>% filter(DUID %in% generators, BIDTYPE== "ENERGY") %>% 
+        select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, PERIODID, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3,
+               BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10) %>% 
+        mutate(INTERVAL_DATETIME = as.POSIXct(SETTLEMENTDATE) + minutes(PERIODID*30 + 210))
     if(url != 0){
         unlink(temp) #delete zip
     } 

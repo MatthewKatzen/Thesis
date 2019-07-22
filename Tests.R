@@ -1,7 +1,9 @@
 ###t test constrained price at gen v unconstrained
 #problem: only looking at one constraint, may be included in multiple constraints
+install.packages("stringr")
 library(lubridate) # for manipulating time. as.POSXct doesn't like midnight for some reason
 library(tidyverse)
+library(stringr)
 #find interesting event 
 #few lhs generators
 #mix of types 
@@ -27,27 +29,35 @@ rhs %>% filter(CONSTRAINTID == "T>T_TUNN3_110_1") %>%
     table() #yes :)
 
 eqs <- eqs.fun("T>T_TUNN3_110_1", "201606") 
+gens <- eqs %>% filter(FACTOR > 0) %>% #remove negetive factored generators (don't add to constraint)
+    select(SPD_ID) %>% .[-1,] %>% 
+    word(1,sep = "\\.")
+
 
 #get binding events
 rhs.temp <- rhs %>% filter(CONSTRAINTID == "T>T_TUNN3_110_1")
 
 #find long stretch of trues
-temp <- as.POSIXct(rhs.temp$SETTLEMENTDATE[1:20])#lots of gaps in binding, might be easier to analyse continuous bind
+temp <- as.POSIXct(rhs.temp$SETTLEMENTDATE)[50:100]
 qplot(temp)
-temp <- as.POSIXct(rhs.temp$SETTLEMENTDATE[1:100])
-qplot(temp)
-temp <- as.POSIXct(rhs.temp$SETTLEMENTDATE)
 
-temp2 <- seq.POSIXt(temp[1], temp[544], by = "5 min")
-temp3 <- (temp2 %in% (temp))
-temp4 <- rle(temp3)
-temp5 <- which(temp4$values==TRUE & temp4$lengths>25)
-temp5
+temp2 <- seq.POSIXt(temp[1], temp[length(temp)], by = "5 min")
+temp3 <- rle(temp2 %in% (temp))
+temp4 <- which(temp3$values==TRUE & temp3$lengths>25)
 
-temp4$lengths[temp5[1]]
-sum(temp4$lengths[1:24][temp4$values[1:24]==T])+1
-temp[58]
-qplot(temp[58:87])
+
+for (i in 1:length(temp4)){
+    start <- sum(temp3$lengths[1:(temp4[i]-1)][temp3$values[1:(temp4[i]-1)]==T])+1
+    end <- start + temp3$lengths[temp4[i]] - 1
+    print(interval(temp[start], temp[end]))
+}
+
+
+start <- sum(temp3$lengths[1:(temp4[1]-1)][temp3$values[1:(temp4[1]-1)]==T])+1
+end <- start + temp3$lengths[temp4[1]] - 1
+
+
+qplot(temp[start:end])
 temp[87:88]#6:35 till nect bind
 temp[57:58]#10 minutes since previous bind
 qplot(temp[51:58])
@@ -58,13 +68,10 @@ temp[51:58]
 
 
 #get bids
-bids <- bids.fun("201704", "TUNGATIN")
+bids <- bids.fun("201704", gens)
 
-bids.temp <- bids %>% filter(SETTLEMENTDATE == "2017/04/28 00:00:00", BIDTYPE == "ENERGY") %>% 
+bids.temp <- bids %>% filter(SETTLEMENTDATE == "2017/04/28 00:00:00") %>% 
     filter(as.Date(OFFERDATE) >= "2017/04/27")
-    select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, PERIODID, MAXAVAIL, BANDAVAIL1, 
-           BANDAVAIL2, BANDAVAIL3, BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, 
-           BANDAVAIL10)
 
 bids_d <- bids_d.fun("201704", "TUNGATIN")
 
@@ -73,9 +80,19 @@ bids_d.temp <- bids_d %>% filter(SETTLEMENTDATE == "2017/04/28 00:00:00", BIDTYP
            BANDAVAIL2, BANDAVAIL3, BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, 
            BANDAVAIL10)
 
-(bids.temp$OFFERDATE) %>% table() #no rebids during binding
+#check if any offers occured whilst binding
 
-head(bids.temp)
+temp6 <- bids.temp$OFFERDATE %>% unique() %>% as.POSIXct()
+bind <- interval(temp[58],temp[87])
+temp6 %within% bind
+
+
+
+
+
+
+#convert 30 min ot 5 min
+#sort(rep(1:nrow(bids.temp), 6))[1:nrow(bids.temp)]
 
 
 #get dispatch amount
