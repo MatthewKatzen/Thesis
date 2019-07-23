@@ -37,6 +37,7 @@ rhs.fun <- function(yearmonth){
 }
 
 #find interval for which rhs is constrained for atleast `len_con` periods
+#input: datetimes = list of all times when rhs is constrained, len_con: minimum length of constraint we want to consider
 constrained.fun <- function(datetimes, len_con){
     temp <- as.POSIXct(datetimes)
     temp2 <- seq.POSIXt(temp[1], temp[length(temp)], by = "5 min")
@@ -135,8 +136,8 @@ bids.fun <- function(yearmonth, generators){
     }
     bids <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
     bids <- bids %>% filter(DUID %in% generators, BIDTYPE== "ENERGY") %>% 
-        select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, PERIODID, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3,
-               BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10) %>% 
+        select(DUID, SETTLEMENTDATE, OFFERDATE, PERIODID, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3,
+               BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10, MAXAVAIL) %>% 
         mutate(INTERVAL_DATETIME = as.POSIXct(SETTLEMENTDATE) + minutes(PERIODID*30 + 210))
     if(url != 0){
         unlink(temp) #delete zip
@@ -160,11 +161,9 @@ bids_d.fun <- function(yearmonth, generator){
               exdir = external.data.location)
     }
     bids <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
-    bids <- bids %>% filter(DUID == generator)#, BIDTYPE== "ENERGY") #%>%
-    #group_by(SETTLEMENTDATE) %>% 
-    #filter(VERSIONNO == max((VERSIONNO))) %>% #get last version of bid file used
-    #select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, PERIODID, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3,
-    #BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10)
+    bids <- bids %>% filter(DUID == generator, BIDTYPE== "ENERGY") %>%
+    select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, PERIODID, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3,
+           BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10)
     if(url != 0){
         unlink(temp) #delete zip
     } 
@@ -206,6 +205,29 @@ fixbid.fun <- function(data){
 # match <- read.csv(paste0("data/PUBLIC_DVD_DISPATCHOFFERTRK_", yearmonth, "010000.CSV"), sep=",",skip=1)
 # match %>% filter(DUID == "GORDON", BIDTYPE== "ENERGY") 
 
+dispatch.tracker.fun <- function(yearmonth, generator){
+    year <- substr(yearmonth, 1, 4)
+    month <- substr(yearmonth, 5, 6)
+    url <- 0
+    csv.name <- paste0(external.data.location, "/PUBLIC_DVD_DISPATCHOFFERTRK_", yearmonth, "010000.CSV")
+    if(!file.exists(csv.name)){
+        url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", year,"/MMSDM_", 
+                      year, "_", month, 
+                      "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_DISPATCHOFFERTRK_",yearmonth,
+                      "010000.zip")
+        temp <- tempfile()
+        download.file(url, temp, mode="wb")
+        unzip(temp, paste0("PUBLIC_DVD_DISPATCHOFFERTRK_", yearmonth, "010000.CSV"),
+              exdir = external.data.location)
+    }
+    dispatch <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
+    dispatch <- dispatch %>% filter(DUID == generator) #%>% 
+        #select(DUID, SETTLEMENTDATE, TOTALCLEARED)
+    if(url != 0){
+        unlink(temp) #delete zip
+    }    
+    return(dispatch)
+}
 
 ###DISPACTCH
 #gets one day of dispatch for one generator
@@ -292,3 +314,12 @@ loop.fun <- function(fun,...){
     eval(parse(text = fun))
 }
 
+#Input: dates = list of rebid datetimes, ints = list of intervals
+#output: vector of logical which says whether the rebid lies within any of the intervals
+within_ints <- function(dates, ints){
+    out <- c()
+    for (i in 1:length(dates)){
+        out[i] <- any(dates[i] %within% ints)
+    }
+    return(dates[out])
+}
