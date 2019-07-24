@@ -5,7 +5,9 @@ library(tidyverse)
 library(openxlsx)
 library(sqldf)
 setwd("C:/Users/Matthew/Google Drive/Uni/19/Thesis/Analysis/Dissordely Bidding")
-external.data.location <- "D:/Thesis/Data" #for big data
+external.data.location <- "C:/Users/Matthew/Downloads/Temp" #for big data
+#"C:/Users/Matthew/Downloads/Temp"
+#"D:/Thesis/Data"
 
 ### RHS and MV
 #gets rhs and values for one month period
@@ -322,4 +324,43 @@ within_ints <- function(dates, ints){
         out[i] <- any(dates[i] %within% ints)
     }
     return(dates[out])
+}
+
+#Removes all rebids that occur before the date we are looking at except the initial one
+#date is chosen from data, checks if all data has same settlement date
+#input: bid_data = data from various generators within the same settlement date
+remove.old.rebids.fun <- function(data){
+    #check if all the same settlementdate
+    if(all((data %>% select(SETTLEMENTDATE) %>% 
+            unique() %>% dim()) != c(1,1))) {#check if only one date in dataset
+        stop()
+    }
+    
+    date <- data %>% select(SETTLEMENTDATE) %>% unique() %>% 
+        as.character() %>% as.Date()
+    
+    datetime <- paste0(date, "04:05:00 AEST")#convert date to NEM start time
+    dates <- data %>% transmute(OFFERDATE = as.POSIXct(OFFERDATE)) %>% 
+        unique() %>% as.data.frame() %>% .[,1] #get list of dates rebid
+    initial <- dates[which(dates < date) %>% max()] #get last rebid before day starts
+    out <- data %>% filter(OFFERDATE >= initial)#only keep rebids that occur at or before initial
+    return(as.data.frame(out))
+}
+
+#remove old and duplicate bids for various generators
+#input: bid_data = data from various generators within the same settlement date
+clean.bids <- function(bid_data){
+    temp <- bid_data %>% group_split(DUID) %>% #split by generator
+        map(~ remove.old.rebids.fun(.x)) %>%  #remove old rebids
+        map(~ group_split(.x, OFFERDATE)) #split by offerdate
+    
+    temp2<- modify_depth(temp, 2,  ~ select(.x, -OFFERDATE)) %>% #remove offerdate
+        map( ~ !duplicated(.x))#get list of list of duplicate dfs
+    
+    temp3 <- map2(temp, (1:length(temp)), 
+                  function(x,y) x[temp2[[y]]]) %>% #remove duplicate dfs
+        map(~ bind_rows(.x)) %>% #bind all bids within generator
+        bind_rows() %>% #bind all generators
+        as.data.frame
+    return(temp3)
 }

@@ -15,24 +15,23 @@ library(dplyr)#need new verison of dplyr not in tidyverse yet for group_split()
 #no wind
 #binds consistently over a period
 
+rhs <- read.csv("data/2017rhs.csv")
+
+#look at most common constraints
 rhs %>% 
     select(CONSTRAINTID) %>% 
     mutate(CONSTRAINTID = as.character(CONSTRAINTID)) %>% 
-    table() %>% sort(decreasing = TRUE)
-
-
+    table() %>% sort(decreasing = TRUE) %>% head()
 
 #T>T_TUNN3_110_1 
 
 
-
-
 #check if always the same equation
-rhs %>% filter(CONSTRAINTID == "T>T_TUNN3_110_1") %>% 
+rhs %>% filter(CONSTRAINTID == "N_X_MBTE2_B") %>% 
     transmute(GENCONID_EFFECTIVEDATE = as.character(GENCONID_EFFECTIVEDATE)) %>% 
     table() #yes :)
 
-eqs <- eqs.fun("T>T_TUNN3_110_1", "201606") 
+eqs <- eqs.fun("N_X_MBTE2_B", "201311") 
 gens <- eqs %>% filter(FACTOR > 0) %>% #remove negetive factored generators (don't add to constraint)
     select(SPD_ID) %>% .[-1,] %>% 
     word(1,sep = "\\.")
@@ -45,15 +44,6 @@ rhs.temp <- rhs %>% filter(CONSTRAINTID == "T>T_TUNN3_110_1")
 int <- constrained.fun(rhs.temp$SETTLEMENTDATE, 25)
 
 
-qplot(temp[start:end])
-temp[87:88]#6:35 till nect bind
-temp[57:58]#10 minutes since previous bind
-qplot(temp[51:58])
-temp[51:58]
-
-#can see that there are a few events before the main chunk. Ignore them for now
-
-
 
 #get bids
 bids <- bids.fun("201704", gens)
@@ -61,21 +51,15 @@ bids <- bids.fun("201704", gens)
 bids.temp <- bids %>% filter(SETTLEMENTDATE == "2017/04/28 00:00:00") 
    
 
-bids_d <- bids_d.fun("201704", "TUNGATIN")
-
-bids_d.temp <- bids_d %>% filter(SETTLEMENTDATE == "2017/04/28 00:00:00", BIDTYPE == "ENERGY") %>% 
-    select(DUID, SETTLEMENTDATE, INTERVAL_DATETIME, OFFERDATE, VERSIONNO, PERIODID, MAXAVAIL, BANDAVAIL1, 
-           BANDAVAIL2, BANDAVAIL3, BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, 
-           BANDAVAIL10)
-
-
-
+#remove old and duplicate bids
+bids.temp.2 <- clean.bids(bids.temp)
 
 
 #check if any offers occured whilst binding
-temp6 <- bids.temp$OFFERDATE %>% unique() %>% as.POSIXct()#rebid times
-c.datetime <- within_ints(temp6,int) # rebids occuring whilst constrained
+bid.times <- bids.temp.2$OFFERDATE %>% unique() %>% as.POSIXct()#rebid times
+c.datetime <- within_ints(bid.times,int) # rebids occuring whilst constrained
 
+c.dat
 
 c.gen <- bids.temp %>% filter(as.POSIXct(OFFERDATE) %in% c.datetime) %>% select(DUID) %>% unique() %>% 
     as.character#get gens that rebid when constrained
@@ -86,17 +70,13 @@ initial <- max(which(rebid < "2017-04-28 04:05:00 AEST")) #gets index of last
 
 rebid <- rebid[initial:length(rebid)]
 
-#remove repeat bids
 
-temp <- bids.temp %>% filter(DUID == "MEADOWBK", as.POSIXct(OFFERDATE) %in% rebid) %>%  
-    select(DUID, INTERVAL_DATETIME, OFFERDATE, MAXAVAIL, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3, BANDAVAIL4, 
-           BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10)
 
-temp2 <- temp %>% group_split(OFFERDATE)#split each offer into its own df in list
 
-temp3 <- map(temp2, ~ select(., -OFFERDATE))
 
-temp2[!duplicated(temp3)]
+
+
+
 
 #Graphs
 

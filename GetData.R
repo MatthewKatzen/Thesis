@@ -23,6 +23,11 @@ write.csv(bands, "data/201701bands.csv")
 bids <- bids.fun("201701", "HWPS1")
 write.csv(bids, "data/201701bids.csv")
 
+#bids at tim eof dispatch
+bids_d <- bids_d.fun("201701", gens)
+write.csv(bids_d, "data/201701bids_d.csv")
+
+
 #dispatch
 dispatch <- dispatch.fun("201701", "2017/01/10", "HWPS1")
 write.csv(dispatch, "data/201701dispatch.csv")
