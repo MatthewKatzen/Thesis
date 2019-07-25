@@ -17,39 +17,22 @@ library(dplyr)#need new verison of dplyr not in tidyverse yet for group_split()
 
 rhs <- read.csv("data/2017rhs.csv")
 
-#look at most common constraints
-rhs %>% 
-    select(CONSTRAINTID) %>% 
-    mutate(CONSTRAINTID = as.character(CONSTRAINTID)) %>% 
-    table() %>% sort(decreasing = TRUE) %>% head()
-
-#T>T_TUNN3_110_1 
-
-
-#check if always the same equation
-rhs %>% filter(CONSTRAINTID == "N_X_MBTE2_B") %>% 
-    transmute(GENCONID_EFFECTIVEDATE = as.character(GENCONID_EFFECTIVEDATE)) %>% 
-    table() #yes :)
-
-eqs <- eqs.fun("N_X_MBTE2_B", "201311") 
-gens <- eqs %>% filter(FACTOR > 0) %>% #remove negetive factored generators (don't add to constraint)
-    select(SPD_ID) %>% .[-1,] %>% 
-    word(1,sep = "\\.")
-
 
 #get binding events
-rhs.temp <- rhs %>% filter(CONSTRAINTID == "T>T_TUNN3_110_1")
+rhs.temp <- rhs %>% filter(CONSTRAINTID == con[2,1])
 
 #find long stretch of trues
-int <- constrained.fun(rhs.temp$SETTLEMENTDATE, 25)
+int <- constrained.fun(rhs.temp$SETTLEMENTDATE, 24)
 
-
+#get gens
+gens <- temp6 %>% filter(GENCONID == "Q>NIL_BI_FB") %>% 
+    filter(FACTOR > 0) %>% #remove negetive factored generators (don't add to constraint)
+    select(SPD_ID) %>% .[-1,] %>% word(1,sep = "\\.") #clean up names of generators
 
 #get bids
-bids <- bids.fun("201704", gens)
-
-bids.temp <- bids %>% filter(SETTLEMENTDATE == "2017/04/28 00:00:00") 
-   
+bids <- bids.fun("201701", gens)
+bids.temp <- bids %>% filter(as.Date(SETTLEMENTDATE) == "2017-01-15") 
+bids.temp$OFFERDATE %>% unique()#lots of old rebids to remove   
 
 #remove old and duplicate bids
 bids.temp.2 <- clean.bids(bids.temp)
@@ -58,6 +41,11 @@ bids.temp.2 <- clean.bids(bids.temp)
 #check if any offers occured whilst binding
 bid.times <- bids.temp.2$OFFERDATE %>% unique() %>% as.POSIXct()#rebid times
 c.datetime <- within_ints(bid.times,int) # rebids occuring whilst constrained
+
+#no rebids while constrained :(
+
+
+
 
 c.dat
 
@@ -69,13 +57,6 @@ rebid <- bids.temp %>% filter(DUID == c.gen) %>% select(OFFERDATE) %>%
 initial <- max(which(rebid < "2017-04-28 04:05:00 AEST")) #gets index of last 
 
 rebid <- rebid[initial:length(rebid)]
-
-
-
-
-
-
-
 
 
 #Graphs

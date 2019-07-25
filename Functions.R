@@ -5,7 +5,7 @@ library(tidyverse)
 library(openxlsx)
 library(sqldf)
 setwd("C:/Users/Matthew/Google Drive/Uni/19/Thesis/Analysis/Dissordely Bidding")
-external.data.location <- "C:/Users/Matthew/Downloads/Temp" #for big data
+external.data.location <- "D:/Thesis/Data" #for big data
 #"C:/Users/Matthew/Downloads/Temp"
 #"D:/Thesis/Data"
 
@@ -44,7 +44,7 @@ constrained.fun <- function(datetimes, len_con){
     temp <- as.POSIXct(datetimes)
     temp2 <- seq.POSIXt(temp[1], temp[length(temp)], by = "5 min")
     temp3 <- rle(temp2 %in% (temp))
-    temp4 <- which(temp3$values==TRUE & temp3$lengths > 25)
+    temp4 <- which(temp3$values==TRUE & temp3$lengths > len_con)
     int <- list()
     for (i in 1:length(temp4)){
         start <- sum(temp3$lengths[1:(temp4[i]-1)][temp3$values[1:(temp4[i]-1)]==T])+1

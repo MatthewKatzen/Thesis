@@ -16,7 +16,7 @@ constraints$CONSTRAINTID[1:10]
 
 
 #check if always the same equation
-temp <- constraints$CONSTRAINTID[1:10] #get top 10 constraints
+temp <- constraints$CONSTRAINTID[1:20] #get top 10 constraints
 temp2 <- map(.x = temp, 
     .f =  ~(rhs %>% filter(CONSTRAINTID == .x) %>% 
                             select(GENCONID_EFFECTIVEDATE) %>% 
@@ -31,12 +31,14 @@ temp4 <- rhs %>% filter(CONSTRAINTID %in% temp3) %>% select(CONSTRAINTID, GENCON
     mutate(YEARDATE = paste0(substr(GENCONID_EFFECTIVEDATE, 1, 4),substr(GENCONID_EFFECTIVEDATE, 6, 7)))#get constraints and YEARDATES of interest
 
 
-###PMAP not woring!!
-temp5 <- pmap(temp4, ~ eqs.fun(..1,..3)) 
+temp5 <- map2(.x = temp4$CONSTRAINTID, .y = temp4$YEARDATE, ~ eqs.fun(.x, .y))  #get all eqs
 
-eqs.fun(temp4[1,1], temp4[1,3])
-    
-eqs <- eqs.fun("N_X_MBTE2_B", "201311") 
-gens <- eqs %>% filter(FACTOR > 0) %>% #remove negetive factored generators (don't add to constraint)
-    select(SPD_ID) %>% .[-1,] %>% 
-    word(1,sep = "\\.")
+map(temp5, ~ any((.x %>% select(SPD_TYPE)) == "T"))
+
+temp6 <- temp5 %>% bind_rows() %>% group_by(GENCONID) %>% 
+    filter(any(SPD_TYPE=="T")) %>% as.data.frame()#removes df if has no type T (generators)
+
+### top constraints
+con <- temp6 %>% select(GENCONID) %>% unique()
+
+
