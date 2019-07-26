@@ -4,7 +4,7 @@
 #3. rebids during a constrained period
 
 
-rhs <- read.csv("data/2017rhs.csv") %>% mutate(GENCONID_EFFECTIVEDATE = as.character(GENCONID_EFFECTIVEDATE))
+rhs <- read.csv("data/2017rhs.csv", stringsAsFactors = F) 
 
 #look at most common constraints
 constraints <- rhs %>% 
@@ -12,11 +12,12 @@ constraints <- rhs %>%
     tally() %>% 
     arrange(-n)
 
-constraints$CONSTRAINTID[1:10]
+constraints$CONSTRAINTID[1:20]
+
+temp <- constraints$CONSTRAINTID[1:100] #get top 20 constraints
 
 
 #check if always the same equation
-temp <- constraints$CONSTRAINTID[1:20] #get top 10 constraints
 temp2 <- map(.x = temp, 
     .f =  ~(rhs %>% filter(CONSTRAINTID == .x) %>% 
                             select(GENCONID_EFFECTIVEDATE) %>% 
@@ -28,17 +29,19 @@ temp2 <- map(.x = temp,
 temp3 <- temp[temp2] #list of constraints with one's that have multiple equations removed 
 
 temp4 <- rhs %>% filter(CONSTRAINTID %in% temp3) %>% select(CONSTRAINTID, GENCONID_EFFECTIVEDATE) %>% unique() %>% 
-    mutate(YEARDATE = paste0(substr(GENCONID_EFFECTIVEDATE, 1, 4),substr(GENCONID_EFFECTIVEDATE, 6, 7)))#get constraints and YEARDATES of interest
+    mutate(YEARDATE = paste0(substr(GENCONID_EFFECTIVEDATE, 1, 4),
+                             substr(GENCONID_EFFECTIVEDATE, 6, 7)))#get constraints and YEARDATES of interest
 
 
 temp5 <- map2(.x = temp4$CONSTRAINTID, .y = temp4$YEARDATE, ~ eqs.fun(.x, .y))  #get all eqs
 
-map(temp5, ~ any((.x %>% select(SPD_TYPE)) == "T"))
 
 temp6 <- temp5 %>% bind_rows() %>% group_by(GENCONID) %>% 
-    filter(any(SPD_TYPE=="T")) %>% as.data.frame()#removes df if has no type T (generators)
+    filter(any(SPD_TYPE=="T")) %>% #removes df if has no type T (generators)
+    filter(substr(GENCONID, 2, 3)!=">") %>% #only look at thermal overload
+    as.data.frame()
 
 ### top constraints
-con <- temp6 %>% select(GENCONID) %>% unique()
+con <- temp6 %>% select(GENCONID) %>% unique() %>% .[,] 
 
 
