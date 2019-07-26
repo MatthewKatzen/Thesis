@@ -42,16 +42,17 @@ bids.temp.2 <- clean.bids(bids.temp)
 
 
 #check if any offers occured whilst binding
-bid.times <- bids.temp.2$OFFERDATE %>% unique() %>% as.POSIXct()#rebid times
+bid.times <- bids.temp.2$OFFERDATE %>% unique()  %>% as.POSIXct()#rebid times
 c.datetime <- within_ints(bid.times,int[1]) # rebids occuring whilst constrained
 
 #which gens bid whilst constrained
-temp8 <- bids.temp %>% group_by(DUID) %>% filter(OFFERDATE == c.datetime) %>% as.data.frame()
-
-temp8 %>% select(DUID) %>% unique()
-
+temp8 <- bids.temp.2 %>% group_by(DUID) %>% filter(OFFERDATE == c.datetime) %>% as.data.frame() %>% 
+    select(DUID) %>% unique %>% .[,]
 
 
+#when are they rebidding
+temp9 <-  bids.temp.2 %>% filter(DUID == temp8[2]) %>% select(OFFERDATE) %>% unique()
+int
 
 
 
