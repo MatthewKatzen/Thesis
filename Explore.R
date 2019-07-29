@@ -23,13 +23,19 @@ rhs <- read.csv("data/2017rhs.csv") %>%
     filter(grepl(">", CONSTRAINTID)) %>% #only thermal constraints
     mutate(CONSTRAINTID = as.character(CONSTRAINTID)) %>% #convert to character to get rid of unused levels
     mutate(STATE = substr(CONSTRAINTID, 1, 1)) %>% #create state variable
-    mutate(SETTLEMENTDATE = as.POSIXct(SETTLEMENTDATE))
+    mutate(STATE = plyr::mapvalues(STATE, 
+                                   c("Q","N","V","S","T"),
+                                   c("QLD", "NSW", "VIC", "SA", "TAS"))) %>% 
+    mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE)) #use this as.POSIXct removes time for everything as one constains midnight. Note its also in UTC 
 
 #total constraints
 rhs1 <- read.csv("data/201701rhs.csv") %>% 
     filter(grepl(">", CONSTRAINTID)) %>% #only thermal constraints
     mutate(CONSTRAINTID = as.character(CONSTRAINTID)) %>% #convert to character to get rid of unused levels
-    mutate(STATE = substr(CONSTRAINTID, 1, 1)) %>% #create state variable
+    mutate(STATE = substr(CONSTRAINTID, 1, 1)) %>% #create state Variable
+    mutate(STATE = plyr::mapvalues(STATE, 
+                             c("Q","N","V","S","T"),
+                             c("QLD", "NSW", "VIC", "SA", "TAS"))) %>% 
     mutate(SETTLEMENTDATE = as_datetime(SETTLEMENTDATE))
 
 nrow(rhs1) #6024 events in may
@@ -55,11 +61,21 @@ p3 <- ggplot(rhs %>% mutate(SETTLEMENTDATE = week(SETTLEMENTDATE)),
              aes(x = SETTLEMENTDATE, fill = STATE)) + 
     geom_bar()
 p3
-#time of day of events
-p4 <- ggplot(rhs %>% mutate(SETTLEMENTDATE = hour(SETTLEMENTDATE)*60*60),
-             aes(x = SETTLEMENTDATE, fill = STATE)) + 
-    geom_bar()
-p4 + scale_x_time()
+#time of day of events split by state
+p4 <- ggplot(rhs %>% mutate(HOUR = hour(SETTLEMENTDATE)*60*60),
+             aes(x = HOUR, fill = STATE)) + 
+    geom_bar() + 
+    facet_wrap(. ~ STATE) +
+    scale_x_time()
+p4 
+
+#time of day split by state and month
+p4.2 <- ggplot(rhs %>% mutate(HOUR = hour(SETTLEMENTDATE)*60*60),
+             aes(x = HOUR, fill = STATE)) + 
+    geom_bar() + 
+    facet_grid(month(SETTLEMENTDATE) ~ STATE) +
+    scale_x_time()
+p4.2 
 
 ### MARGINAL VALUE
 #by week
@@ -67,8 +83,22 @@ p5 <- ggplot(rhs %>% mutate(WEEK = week(SETTLEMENTDATE)) %>%
                  group_by(WEEK, STATE) %>% 
                  summarise(SUM = sum(MARGINALVALUE)),
              aes(x = WEEK, y = SUM, fill = STATE)) +
-    geom_bar(stat = "identity")
+    geom_bar(stat = "identity")+
+    facet_grid( ~ STATE)
 p5
 
-    
+#by time of day split by state and month
+p6 <- ggplot(rhs %>% mutate(HOUR = hour(SETTLEMENTDATE), MONTH = month(SETTLEMENTDATE)) %>% 
+                 group_by(HOUR, STATE, MONTH) %>% 
+                 summarise(SUM = sum(MARGINALVALUE)),
+             aes(x = HOUR, y = SUM, fill = STATE)) +
+    geom_bar(stat = "identity")+
+    facet_grid(MONTH ~ STATE)
+p6
+
+#Longest binding constraints are looked at in `Finding Constraints.R`
+#Below we will look at worst constraints in terms of = Sum(MV)
+rhs %>% group_by(CONSTRAINTID) %>% 
+    summarise(SUM = sum(MARGINALVALUE)) %>% 
+    arrange(SUM)
 
