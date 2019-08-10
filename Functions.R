@@ -77,10 +77,10 @@ eqs.fun <- function(constraint, effective.ym) {
     #Clean EQS
     eqs <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE) %>% #load csv
         select(GENCONID, EFFECTIVEDATE, SCOPE, SPD_ID, SPD_TYPE, FACTOR) %>% #keep cols we are interested in
-        filter(SCOPE == "DS") %>% #only care about dispatch constraints 
+        #filter(SCOPE == "DS") %>% #only care about dispatch constraints 
         filter(GENCONID == constraint) %>% #get constraint we care about
         distinct() %>% #remove duplicate rows
-        filter(SPD_TYPE %in% c("T","I") | SPD_ID == "Scale") %>%  #only get scale value, interconnector, and generator/load data
+        #filter(SPD_TYPE %in% c("T","I") | SPD_ID == "Scale") %>%  #only get scale value, interconnector, and generator/load data
         mutate(EFFECTIVEDATE = as.character(EFFECTIVEDATE))
     if(url != 0){ #checks if previous if statement was run
         unlink(temp) #delete zip
@@ -364,3 +364,39 @@ clean.bids <- function(bid_data){
         as.data.frame
     return(temp3)
 }
+
+#read and clean mpa files
+#input: csv file name
+#output: only MPA data
+mpa.clean.fun <- function(file){
+    out <- read.csv(file, sep=",", header = F, stringsAsFactors = FALSE) %>% 
+        filter(V3 == "LOCAL_PRICE") %>% 
+        select(1:8) %>% #remove empty cols
+        `colnames<-`(.[1,]) %>% #set first row as colnames
+        .[-1,] %>% #remove first row
+        `rownames<-`(NULL)#remore row names
+    if(nrow(out)==0){#delete empty dfs with no MPA data
+        out <- NULL
+    } 
+    return(out)
+}
+
+#merge all mpa files within one day
+#input: date
+#output: df of entire day
+mpa.fun <- function(DATE){
+    temp <- tempfile()#zip location
+    temp2 <- tempfile()#unzipped location
+    external.data.location <- "D:/Thesis/Data/MPA" #for big data
+    url <- paste0("http://nemweb.com.au/Reports/Archive/DispatchIS_Reports/PUBLIC_DISPATCHIS_", DATE, ".zip")
+    download.file(url, temp, mode="wb")
+    unzip(temp, exdir = temp2)#unzip outter file
+    temp3 <- paste0(temp2,"\\",list.files(temp2))#all subzips
+    temp3 %>% map(~ unzip(.x, exdir = external.data.location)) %>% invisible()#unzip sub files
+    temp4 <- paste0(external.data.location,"/",list.files(external.data.location))#all csvs
+    temp5 <- map(temp4, mpa.clean.fun) %>% 
+        bind_rows()#read, clean and bind all csvs
+    return(temp5)
+    unlink(temp)
+    unlink(temp2)
+}   
