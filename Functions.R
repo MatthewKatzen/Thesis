@@ -369,13 +369,8 @@ clean.bids <- function(bid_data){
 #input: csv file name
 #output: only MPA data
 mpa.clean.fun <- function(file){
-    out <- read.csv(file, sep=",", header = F, stringsAsFactors = FALSE) %>% 
-        filter(V3 == "LOCAL_PRICE") %>% 
-        select(1:8) %>% #remove empty cols
-        `colnames<-`(.[1,]) %>% #set first row as colnames
-        .[-1,] %>% #remove first row
-        `rownames<-`(NULL)#remore row names
-    if(nrow(out)==0){#delete empty dfs with no MPA data
+    out <- read.csv(file, sep=",", header = F, stringsAsFactors = FALSE) 
+    if(nrow(out)==0){#delete empty dfs with no Data
         out <- NULL
     } 
     return(out)
