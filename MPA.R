@@ -1,5 +1,6 @@
 library(tidyverse)
-#unzip
+library(lubridate)
+#unzip mpa
 from <- "20180710"
 to <- "20190808"
 dates <- seq(ymd(from), ymd(to), by = "day") %>% #list of dates
@@ -45,22 +46,13 @@ missing.dates %>% map(~ mpa.unzip(.x)) #download missing dates
 #remove duplicate files
 files %>% duplicated() %>% which() #no duplicates
 
-#get gen fuel types
-fuel <- read.csv("data/dontupload/GenFuelTypes.csv")
-fuel <- fuel %>% select(DUID, Region, Classification, 7:10)
-head(fuel)
-
-#get rrp
-rrp <- rrp.fun("201807")
-head(rrp)
-
-#load as mpa
+#merge mpa files into chucks of 1000
 external.data.location <- "D:/Thesis/Data/MPA" #for big data
-files <- paste0(external.data.location, "/", list.files(external.data.location))
+files <- paste0(external.data.location, "/", list.files(external.data.location, pattern = "*.CSV"))
 
 splits <- c(seq(1, length(files), 1000), length(files)+1)
 
-for (i in 26:(length(splits)-1)){
+for (i in 1:(length(splits)-1)){
     file_name <- paste0("D:/Thesis/Data/MPA/Merged/mpa", i, ".csv")
     mpa.current <- files[(splits[i]): (splits[i+1]-1)] %>% 
         map(~ read.csv(.x, sep=",", header = F, stringsAsFactors = FALSE)) %>% 
@@ -69,7 +61,35 @@ for (i in 26:(length(splits)-1)){
 }
 
 
-head(mpa.current)
+#clean to only get mpa
 
-write.csv(mpa.current, "data/mpa.current.csv")
-mpa.current <- read.csv("data/mpa.current.csv")
+for (i in 1:(length(splits)-1)){
+    mpa <- read.csv(paste0("D:/Thesis/Data/MPA/Merged/mpa",i,".csv"))
+    mpa <- mpa %>% 
+        filter(V3 == "LOCAL_PRICE") %>% 
+        filter(V5 != "SETTLEMENTDATE") %>% 
+        select(c(6:8))  %>% 
+        setNames(c("SETTLEMENTDATE", "DUID", "MPA")) %>% 
+        mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE), DUID = as.character(DUID), MPA = as.numeric(as.character(MPA)))
+    file_name <- paste0("D:/Thesis/Data/MPA/Merged/Cleaned/mpa_cleaned", i, ".csv")
+    write.csv(mpa, file_name)    
+}
+
+#Bind all cleaned files
+files <- paste0("D:/Thesis/Data/MPA/Merged/Cleaned/", list.files("D:/Thesis/Data/MPA/Merged/Cleaned/"))
+mpa.complete <- files %>% map(~ read.csv(.x, stringsAsFactors = FALSE)) %>% 
+    bind_rows() %>% select(-1)
+
+write.csv(mpa.complete, "D:/Thesis/Data/MPA/Merged/Cleaned/mpa_complete.csv")
+
+#get gen fuel types
+fuel <- read.csv("data/dontupload/GenFuelTypes.csv") %>% 
+    select(DUID, Region, Classification, 7:9) #remove extra detailed cols
+colnames(fuel) <- str_remove_all(colnames(fuel), c("[.]"))
+
+#get rrp
+rrp <- rrp.fun("201807")
+head(rrp)
+
+#merge datasets
+mpa.complete %>% head() %>% merge(fuel, by = "DUID")
