@@ -1,5 +1,9 @@
 library(tidyverse)
 library(lubridate)
+Sys.setenv(TZ="Australia/Melbourne")
+Sys.setenv(TZ="UTC")
+
+
 #unzip mpa
 from <- "20180710"
 to <- "20190808"
@@ -82,14 +86,30 @@ mpa.complete <- files %>% map(~ read.csv(.x, stringsAsFactors = FALSE)) %>%
 
 write.csv(mpa.complete, "D:/Thesis/Data/MPA/Merged/Cleaned/mpa_complete.csv")
 
+
+
+#get MPA
+mpa <- read.csv("D:/Thesis/Data/MPA/Merged/Cleaned/mpa_complete.csv", stringsAsFactors = FALSE) %>% select(-1) %>% 
+    mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
+    #mutate(SETTLEMENTDATE = str_replace_all(SETTLEMENTDATE, "-", "/"))#convert date into correct format
+
+
 #get gen fuel types
-fuel <- read.csv("data/dontupload/GenFuelTypes.csv") %>% 
+fuel <- read.csv("data/dontupload/GenFuelTypes.csv", stringsAsFactors = FALSE) %>% 
     select(DUID, Region, Classification, 7:9) #remove extra detailed cols
 colnames(fuel) <- str_remove_all(colnames(fuel), c("[.]"))
 
 #get rrp
-rrp <- rrp.fun("201807")
-head(rrp)
+rrp <- rrp.fun("201807") %>% mutate(Region = REGIONID) %>% select(-REGIONID) %>% 
+    mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
+
+
 
 #merge datasets
-mpa.complete %>% head() %>% merge(fuel, by = "DUID")
+mpa_comb <- mpa %>% merge(fuel, by = "DUID") %>% 
+    inner_join(rrp, by = c("SETTLEMENTDATE", "Region")) %>% 
+    filter(MPA < 0)#for now just removing pos obs
+
+
+
+
