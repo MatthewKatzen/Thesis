@@ -110,6 +110,6 @@ mpa_comb <- mpa %>% merge(fuel, by = "DUID") %>%
     inner_join(rrp, by = c("SETTLEMENTDATE", "Region")) %>% 
     filter(MPA < 0)#for now just removing pos obs
 
-
+write.csv(mpa_comb, "D:/Thesis/Data/MPA/Merged/Cleaned/mpa_combined.csv")
 
 
