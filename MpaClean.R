@@ -1,7 +1,6 @@
 library(tidyverse)
 library(lubridate)
 Sys.setenv(TZ="Australia/Melbourne")
-Sys.setenv(TZ="UTC")
 
 
 #unzip mpa
@@ -68,13 +67,13 @@ for (i in 1:(length(splits)-1)){
 #clean to only get mpa
 
 for (i in 1:(length(splits)-1)){
-    mpa <- read.csv(paste0("D:/Thesis/Data/MPA/Merged/mpa",i,".csv"))
+    mpa <- read.csv(paste0("D:/Thesis/Data/MPA/Merged/mpa",i,".csv"), stringsAsFactors = FALSE)
     mpa <- mpa %>% 
         filter(V3 == "LOCAL_PRICE") %>% 
         filter(V5 != "SETTLEMENTDATE") %>% 
         select(c(6:8))  %>% 
         setNames(c("SETTLEMENTDATE", "DUID", "MPA")) %>% 
-        mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE), DUID = as.character(DUID), MPA = as.numeric(as.character(MPA)))
+        mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE), DUID = as.character(DUID), MPA = as.numeric(MPA))
     file_name <- paste0("D:/Thesis/Data/MPA/Merged/Cleaned/mpa_cleaned", i, ".csv")
     write.csv(mpa, file_name)    
 }
@@ -90,8 +89,8 @@ write.csv(mpa.complete, "D:/Thesis/Data/MPA/Merged/Cleaned/mpa_complete.csv")
 
 #get MPA
 mpa <- read.csv("D:/Thesis/Data/MPA/Merged/Cleaned/mpa_complete.csv", stringsAsFactors = FALSE) %>% select(-1) %>% 
-    mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
-    #mutate(SETTLEMENTDATE = str_replace_all(SETTLEMENTDATE, "-", "/"))#convert date into correct format
+    mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE)) %>% 
+    distinct()#heaps of duplicates for some reason
 
 
 #get gen fuel types
@@ -100,16 +99,35 @@ fuel <- read.csv("data/dontupload/GenFuelTypes.csv", stringsAsFactors = FALSE) %
 colnames(fuel) <- str_remove_all(colnames(fuel), c("[.]"))
 
 #get rrp
-rrp <- rrp.fun("201807") %>% mutate(Region = REGIONID) %>% select(-REGIONID) %>% 
+external.data.location <- "D:/Thesis/Data" #for big data
+yearmonth <- c("201807","201808","201809","201810","201811","201812","201901","201902","201903","201904","201905","201906","201907")
+rrp <- yearmonth %>% map(~ rrp.fun(.x)) %>% bind_rows() %>% 
+    mutate(Region = REGIONID) %>% select(-REGIONID) %>% 
     mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
 
 
 
 #merge datasets
 mpa_comb <- mpa %>% merge(fuel, by = "DUID") %>% 
-    inner_join(rrp, by = c("SETTLEMENTDATE", "Region")) %>% 
-    filter(MPA < 0)#for now just removing pos obs
+    inner_join(rrp, by = c("SETTLEMENTDATE", "Region"))
 
 write.csv(mpa_comb, "D:/Thesis/Data/MPA/Merged/Cleaned/mpa_combined.csv")
 
 
+#repeated rows?
+
+temp <- mpa %>% select(SETTLEMENTDATE, DUID) %>% duplicated() %>% which() %>% mpa[.,]
+temp %>% head()
+
+mpa %>% filter(SETTLEMENTDATE == ymd_hms("2018-07-10 00:10:00"))
+
+#mpa_comb fucking up
+mpa_comb <- mpa %>% merge(fuel, by = "DUID")
+
+mpa %>% filter(SETTLEMENTDATE == ymd_hms("2018-12-19 02:55:00"), DUID == "AGLHAL")
+
+mpa_comb %>% filter(SETTLEMENTDATE == ymd_hms("2018-12-19 02:55:00"), DUID == "AGLHAL")
+head(fuel)
+
+mpa %>% head()
+fuel %>% head()
