@@ -12,6 +12,7 @@ external.data.location <- "D:/Thesis/Data" #for big data
 ### RHS and MV
 #gets rhs and values for one month period
 rhs.fun <- function(yearmonth){
+    external.data.location <- "D:/Thesis/Data/RHS" 
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
     url <- 0 #initialise
@@ -24,7 +25,7 @@ rhs.fun <- function(yearmonth){
                       "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_DISPATCHCONSTRAINT_",
                       yearmonth, "010000.zip")
         temp <- tempfile()
-        download.file(url, temp, mode="wb") #download zip
+        download.file(url, temp, mode="wb", method = "curl") #download zip
         unzip(temp, paste0("PUBLIC_DVD_DISPATCHCONSTRAINT_", yearmonth, "010000.CSV"), 
               exdir = external.data.location) #unzip[ zipped file and save csv to external storage
     }
@@ -59,6 +60,7 @@ constrained.fun <- function(datetimes, len_con){
 #the lhs form (Scale, and T)
 #In the future should probably create entire database
 eqs.fun <- function(constraint, effective.ym) {
+    external.data.location <- "D:/Thesis/Data/EQS" #for big data
     e.year <- substr(effective.ym, 1, 4)
     e.month <- substr(effective.ym, 5, 6)
     csv.name <- paste0(external.data.location, "/PUBLIC_DVD_GENERICCONSTRAINTRHS_", effective.ym, 
@@ -70,18 +72,18 @@ eqs.fun <- function(constraint, effective.ym) {
                       "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_GENERICCONSTRAINTRHS_", 
                       effective.ym, "010000.zip")
         temp <- tempfile()
-        download.file(url, temp, mode="wb")
+        download.file(url, temp, mode="wb", method = "curl")
         unzip(temp, paste0("PUBLIC_DVD_GENERICCONSTRAINTRHS_", effective.ym, "010000.CSV"), 
               exdir = external.data.location)
     }
     #Clean EQS
     eqs <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE) %>% #load csv
         select(GENCONID, EFFECTIVEDATE, SCOPE, SPD_ID, SPD_TYPE, FACTOR) %>% #keep cols we are interested in
-        #filter(SCOPE == "DS") %>% #only care about dispatch constraints 
+        filter(SCOPE == "DS") %>% #only care about dispatch constraints 
         filter(GENCONID == constraint) %>% #get constraint we care about
-        distinct() %>% #remove duplicate rows
-        #filter(SPD_TYPE %in% c("T","I") | SPD_ID == "Scale") %>%  #only get scale value, interconnector, and generator/load data
-        mutate(EFFECTIVEDATE = as.character(EFFECTIVEDATE))
+        #distinct() %>% #remove duplicate rows
+        filter(SPD_TYPE %in% c("T","I") | SPD_ID == "Scale") %>%  #only get scale value, interconnector, and generator/load data
+        mutate(EFFECTIVEDATE = ymd_hms(EFFECTIVEDATE))
     if(url != 0){ #checks if previous if statement was run
         unlink(temp) #delete zip
     }
@@ -92,6 +94,7 @@ eqs.fun <- function(constraint, effective.ym) {
 #only uses last band before settlement date
 #i.e. check example at end
 bands.fun <- function(yearmonth){
+    external.data.location <- "D:/Thesis/Data/BANDS" #for big data
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
     csv.name <- paste0(external.data.location, "/PUBLIC_DVD_BIDDAYOFFER_", yearmonth, "010000.CSV")
@@ -101,7 +104,7 @@ bands.fun <- function(yearmonth){
                       year,"_", month, "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_BIDDAYOFFER_D_",
                       yearmonth,"010000.zip")
         temp <- tempfile()
-        download.file(url, temp, mode="wb")
+        download.file(url, temp, mode="wb", method = "curl")
         unzip(temp, paste0("PUBLIC_DVD_BIDDAYOFFER_", yearmonth, "010000.CSV"), 
               exdir = external.data.location)
     }
@@ -122,6 +125,7 @@ bands.fun <- function(yearmonth){
 #for now it just takes th elast bid file for each day. 
 #Note that the file can be altered throughout the day.
 bids.fun <- function(yearmonth, generators){
+    external.data.location <- "D:/Thesis/Data/BIDS" #for big data
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
     url <- 0
@@ -132,7 +136,7 @@ bids.fun <- function(yearmonth, generators){
                       yearmonth,
                       "010000.zip")
         temp <- tempfile()
-        download.file(url, temp, mode="wb")
+        download.file(url, temp, mode="wb", method = "curl")
         unzip(temp, paste0("PUBLIC_DVD_BIDPEROFFER_", yearmonth, "010000.CSV"), 
               exdir = external.data.location)
     }
@@ -148,6 +152,7 @@ bids.fun <- function(yearmonth, generators){
 }
 
 bids_d.fun <- function(yearmonth, generator){
+    external.data.location <- "D:/Thesis/Data/BIDS_D" #for big data
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
     url <- 0
@@ -158,7 +163,7 @@ bids_d.fun <- function(yearmonth, generator){
                       yearmonth,
                       "010000.zip")
         temp <- tempfile()
-        download.file(url, temp, mode="wb")
+        download.file(url, temp, mode="wb", method = "curl")
         unzip(temp, paste0("PUBLIC_DVD_BIDPEROFFER_D_", yearmonth, "010000.CSV"), 
               exdir = external.data.location)
     }
@@ -218,7 +223,7 @@ dispatch.tracker.fun <- function(yearmonth, generator){
                       "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_DISPATCHOFFERTRK_",yearmonth,
                       "010000.zip")
         temp <- tempfile()
-        download.file(url, temp, mode="wb")
+        download.file(url, temp, mode="wb", method = "curl")
         unzip(temp, paste0("PUBLIC_DVD_DISPATCHOFFERTRK_", yearmonth, "010000.CSV"),
               exdir = external.data.location)
     }
@@ -233,7 +238,8 @@ dispatch.tracker.fun <- function(yearmonth, generator){
 
 ###DISPACTCH
 #gets one day of dispatch for one generator
-dispatch.fun <- function(yearmonth, generator){
+dispatch.fun <- function(yearmonth){
+    external.data.location <- "D:/Thesis/Data/DISPATCH" #for big data
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
     url <- 0
@@ -244,13 +250,15 @@ dispatch.fun <- function(yearmonth, generator){
                       "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_DISPATCHLOAD_",yearmonth,
                       "010000.zip")
         temp <- tempfile()
-        download.file(url, temp, mode="wb")
+        download.file(url, temp, mode="wb", method = "curl")
         unzip(temp, paste0("PUBLIC_DVD_DISPATCHLOAD_", yearmonth, "010000.CSV"),
               exdir = external.data.location)
     }
     dispatch <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
-    dispatch <- dispatch %>% filter(DUID == generator) %>% 
-        select(DUID, SETTLEMENTDATE, TOTALCLEARED)
+    dispatch <- dispatch %>% 
+        filter(INTERVENTION == 0) %>% 
+        select(DUID, SETTLEMENTDATE, TOTALCLEARED) %>% 
+        mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
     if(url != 0){
         unlink(temp) #delete zip
     }    
@@ -282,8 +290,8 @@ maxband.fun <- function(bids, dispatch, bands){
 }
 
 ###RRP
-#gets one day of dispatch for one generator
 rrp.fun <- function(yearmonth){
+    external.data.location <- "D:/Thesis/Data/RRP" #for big data
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
     url <- 0
@@ -294,12 +302,14 @@ rrp.fun <- function(yearmonth){
                       "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_DISPATCHPRICE_",yearmonth,
                       "010000.zip")
         temp <- tempfile()
-        download.file(url, temp, mode="wb")
+        download.file(url, temp, mode="wb", method = "curl")
         unzip(temp, paste0("PUBLIC_DVD_DISPATCHPRICE_", yearmonth, "010000.CSV"),
               exdir = external.data.location)
     }
     rrp.fun <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE) %>% 
-        select("SETTLEMENTDATE", "REGIONID", "RRP")
+        filter(INTERVENTION == 0) %>% 
+        select(SETTLEMENTDATE, REGIONID, RRP)
+        mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
     
     if(url != 0){
         unlink(temp) #delete zip
@@ -384,7 +394,7 @@ mpa.fun <- function(DATE){
     temp2 <- tempfile()#unzipped location
     external.data.location <- "D:/Thesis/Data/MPA" #for big data
     url <- paste0("http://nemweb.com.au/Reports/Archive/DispatchIS_Reports/PUBLIC_DISPATCHIS_", DATE, ".zip")
-    download.file(url, temp, mode="wb")
+    download.file(url, temp, mode="wb", method = "curl")
     unzip(temp, exdir = temp2)#unzip outter file
     temp3 <- paste0(temp2,"\\",list.files(temp2))#all subzips
     temp3 %>% map(~ unzip(.x, exdir = external.data.location)) %>% invisible()#unzip sub files

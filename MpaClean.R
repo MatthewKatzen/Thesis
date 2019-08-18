@@ -1,133 +1,96 @@
 library(tidyverse)
+library(tidyr)
 library(lubridate)
-Sys.setenv(TZ="Australia/Melbourne")
+library(data.table)
 
+data_location <- "D:/Thesis/Data/MPA2"
+files <- paste0(data_location, "/", list.files(data_location))
 
-#unzip mpa
-from <- "20180710"
-to <- "20190808"
-dates <- seq(ymd(from), ymd(to), by = "day") %>% #list of dates
-    str_replace_all("-", "")#remove all `-`
-
-dates %>% map(~ mpa.unzip(.x)) 
-
-mpa.unzip <- function(DATE){
-    temp <- tempfile()#zip location
-    temp2 <- tempfile()#unzipped location
-    external.data.location <- "D:/Thesis/Data/MPA" #for big data
-    url <- paste0("http://nemweb.com.au/Reports/Archive/DispatchIS_Reports/PUBLIC_DISPATCHIS_", DATE, ".zip")
-    download.file(url, temp, mode="wb")
-    unzip(temp, exdir = temp2)#unzip outter file
-    temp3 <- paste0(temp2,"\\",list.files(temp2))#all subzips
-    temp3 %>% map(~ unzip(.x, exdir = external.data.location)) %>% invisible()#unzip sub files
-    unlink(temp)
-    unlink(temp2)
-}   
-
-#check missing files
-from <- "20180710 00:10"
-to <- "20190808 00:10"
-dates <- seq(ymd_hm(from), ymd_hm(to), by = "5 min") %>% #list of dates
-    str_remove_all("-") %>% #remove all `-`
-    str_remove_all(":") %>% 
-    str_remove_all(" ") %>% 
-    str_remove_all("UTC") %>% 
-    substr(1, 12)
-
-files <- paste0(external.data.location, "/", list.files(external.data.location))
-files.check <- substr(files, 38,49)
-
-missing <- which(!(dates %in% files.check)) %>% dates[.]#missing datetimes
-
-missing.dates <- substr(missing, 1, 8) %>% unique() #missing dates
-
-missing.dates %>% map(~ mpa.unzip(.x)) #download missing dates
-
-#manual check
-#all missing data indeed is missing from zip files
-
-#remove duplicate files
-files %>% duplicated() %>% which() #no duplicates
-
-#merge mpa files into chucks of 1000
-external.data.location <- "D:/Thesis/Data/MPA" #for big data
-files <- paste0(external.data.location, "/", list.files(external.data.location, pattern = "*.CSV"))
-
-splits <- c(seq(1, length(files), 1000), length(files)+1)
-
-for (i in 1:(length(splits)-1)){
-    file_name <- paste0("D:/Thesis/Data/MPA/Merged/mpa", i, ".csv")
-    mpa.current <- files[(splits[i]): (splits[i+1]-1)] %>% 
-        map(~ read.csv(.x, sep=",", header = F, stringsAsFactors = FALSE)) %>% 
-        bind_rows()
-    write.csv(mpa.current, file_name)
-}
-
-
-#clean to only get mpa
-
-for (i in 1:(length(splits)-1)){
-    mpa <- read.csv(paste0("D:/Thesis/Data/MPA/Merged/mpa",i,".csv"), stringsAsFactors = FALSE)
-    mpa <- mpa %>% 
-        filter(V3 == "LOCAL_PRICE") %>% 
-        filter(V5 != "SETTLEMENTDATE") %>% 
-        select(c(6:8))  %>% 
-        setNames(c("SETTLEMENTDATE", "DUID", "MPA")) %>% 
-        mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE), DUID = as.character(DUID), MPA = as.numeric(MPA))
-    file_name <- paste0("D:/Thesis/Data/MPA/Merged/Cleaned/mpa_cleaned", i, ".csv")
-    write.csv(mpa, file_name)    
-}
-
-#Bind all cleaned files
-files <- paste0("D:/Thesis/Data/MPA/Merged/Cleaned/", list.files("D:/Thesis/Data/MPA/Merged/Cleaned/"))
-mpa.complete <- files %>% map(~ read.csv(.x, stringsAsFactors = FALSE)) %>% 
-    bind_rows() %>% select(-1)
-
-write.csv(mpa.complete, "D:/Thesis/Data/MPA/Merged/Cleaned/mpa_complete.csv")
-
-
-
-#get MPA
-mpa <- read.csv("D:/Thesis/Data/MPA/Merged/Cleaned/mpa_complete.csv", stringsAsFactors = FALSE) %>% select(-1) %>% 
+mpa <-  files %>% map(~ read.csv(.x, stringsAsFactors = FALSE)) %>% 
+    bind_rows() %>% 
+    select(-X) %>% 
+    setNames(c("SETTLEMENTDATE", "DUID", "LMP", "CONSTRAINED")) %>% 
     mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE)) %>% 
-    distinct()#heaps of duplicates for some reason
+    arrange(SETTLEMENTDATE)
+
+fwrite(mpa, "D:/Thesis/Data/MPA2/mpa_cleaned.csv")
+
+###FUEL
+fuel <- read.csv("data/dontupload/GenFuelTypeNemSight.csv", stringsAsFactors = FALSE) %>% 
+    select(Region, DUID, Participant, Fuel.Type, Emission.Factor) %>%  #keep cols of interest
+    rename(REGIONID = Region) %>% 
+    mutate(REGIONID = case_when(REGIONID == "Queensland" ~ "QLD1",
+                                REGIONID == "New South Wales" ~ "NSW1",
+                                REGIONID == "Victoria" ~ "VIC1",
+                                REGIONID == "South Australia" ~ "SA1",
+                                REGIONID == "Tasmania" ~ "TAS1"))
+
+fwrite(fuel, "D:/Thesis/Data/Fuel_cleaned.csv")
 
 
-#get gen fuel types
-fuel <- read.csv("data/dontupload/GenFuelTypes.csv", stringsAsFactors = FALSE) %>% 
-    select(DUID, Region, Classification, 7:9) #remove extra detailed cols
-colnames(fuel) <- str_remove_all(colnames(fuel), c("[.]"))
-
-#get rrp
-external.data.location <- "D:/Thesis/Data" #for big data
-yearmonth <- c("201807","201808","201809","201810","201811","201812","201901","201902","201903","201904","201905","201906","201907")
-rrp <- yearmonth %>% map(~ rrp.fun(.x)) %>% bind_rows() %>% 
-    mutate(Region = REGIONID) %>% select(-REGIONID) %>% 
-    mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
 
 
+### RRP DATA 2018 
+yearmonths <- c("201801", "201802", "201803", "201804", "201805", "201806", "201807", "201808", "201809", "201810", "201811", "201812")
 
-#merge datasets
-mpa_comb <- mpa %>% merge(fuel, by = "DUID") %>% 
-    inner_join(rrp, by = c("SETTLEMENTDATE", "Region"))
+rrp18 <- yearmonths %>% map(~ rrp.fun(.x)) %>% 
+    bind_rows()
 
-write.csv(mpa_comb, "D:/Thesis/Data/MPA/Merged/Cleaned/mpa_combined.csv")
+fwrite(rrp18, "D:/Thesis/Data/RRP/rrp18.csv")
+
+### GENERATION
+
+dispatch18 <- yearmonths %>% map(~ dispatch.fun(.x)) %>% 
+    bind_rows()
+
+fwrite(dispatch18, "D:/Thesis/Data/DISPATCH/dispatch18.csv")
 
 
-#repeated rows?
+### MERGE 
 
-temp <- mpa %>% select(SETTLEMENTDATE, DUID) %>% duplicated() %>% which() %>% mpa[.,]
-temp %>% head()
+mpa18 <- fread("D:/Thesis/Data/MPA2/mpa_cleaned.csv", stringsAsFactors = FALSE, drop = 1) %>% #mpa
+    mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE)) %>% 
+    filter(year(SETTLEMENTDATE) == "2018", month(SETTLEMENTDATE) == "12") %>% #2018
+    inner_join(fread("D:/Thesis/Data/Fuel_cleaned.csv", stringsAsFactors = FALSE, drop = 1),
+               by = "DUID") %>%  #fuel
+    inner_join(fread("D:/Thesis/Data/RRP/rrp18.csv", stringsAsFactors = FALSE, drop = 1) %>% 
+                   mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE)), 
+               by = c("SETTLEMENTDATE", "REGIONID")) %>% #rrp
+    inner_join(fread("D:/Thesis/Data/DISPATCH/dispatch18.csv", stringsAsFactors = FALSE) %>% 
+                   mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE)),
+               by = c("DUID", "SETTLEMENTDATE")) #dispatch
 
-mpa %>% filter(SETTLEMENTDATE == ymd_hms("2018-07-10 00:10:00"))
+fwrite(mpa18, "D:/Thesis/Data/mpa18.csv")
 
-#mpa_comb fucking up
-mpa_comb <- mpa %>% merge(fuel, by = "DUID")
 
-mpa %>% filter(SETTLEMENTDATE == ymd_hms("2018-12-19 02:55:00"), DUID == "AGLHAL")
 
-mpa_comb %>% filter(SETTLEMENTDATE == ymd_hms("2018-12-19 02:55:00"), DUID == "AGLHAL")
-head(fuel)
 
-mpa %>% head()
-fuel %>% head()
+
+
+###MISSING GENS
+(!(mpa$DUID %in% fuel$DUID)) %>% which() %>% 
+    mpa$DUID[.] %>% table() #only 3 missing which aren't in NEM registration and exemption list either
+
+
+###check whether MPA or LMP
+mpa18 %>% filter(year(SETTLEMENTDATE) == "2018") %>% 
+    arrange(DUID, desc(SETTLEMENTDATE)) %>% 
+    head()
+
+#AGLHAL 2018-12-21 20:30:00
+#PRICE = 81.75
+
+rhs <- rhs.fun("201812")
+rhs %>% filter(ymd_hms(SETTLEMENTDATE) == ymd_hms("2018-12-21 20:30:00"))#MV = -5.01108
+
+eqs <- eqs.fun("S>>PARB_RBTU_WEWT", "201809")
+eqs %>% filter(str_detect(SPD_ID, "AGLHAL"))#k = 0.4447
+
+rrp <- rrp.fun("201812")
+rrp %>% filter(SETTLEMENTDATE == ymd_hms("2018-12-21 20:30:00"))#SA RRP = 83.97958
+
+#MV*K = -2.22
+#MPA = 2.22
+#LP = RRP - MPA = 83.979 - 2.22 = 81.75958
+#WHICH EQUALS PRICE IN MPA_COMB!
+#t/f MPA PRICE = LMP
