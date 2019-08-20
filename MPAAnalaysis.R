@@ -1,46 +1,75 @@
+library(tidyverse)
+library(tidyr)
+library(lubridate)
+library(data.table)
+
 ### GET DATA
-mpa18 <- fread("D:/Thesis/Data/mpa18.csv", stringsAsFactors = FALSE) %>% 
+mpa <- fread("D:/Thesis/Data/COMPLETE/mpacomplete.csv", stringsAsFactors = FALSE) %>% 
     mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
 
 
 ### REVENUE
 
-mpa18 <- mpa18 %>% mutate(Rev_RRP = RRP*TOTALCLEARED) %>% 
+mpa <- mpa %>% mutate(Rev_RRP = RRP*TOTALCLEARED) %>% 
     mutate(Rev_LMP = LMP*TOTALCLEARED) %>% 
-    mutate(Rev_DIF = Rev_RRP - Rev_LMP)#how much you benefit from current system
+    mutate(Rev_DIF = Rev_LMP - Rev_RRP)#how much you benefit from change to LMP system
+
+#how much would system save by changing?
+mpa %>% group_by(YEAR = year(SETTLEMENTDATE)) %>% 
+    summarise(SUM = sum(Rev_DIF))
+
+sum(mpa$Rev_DIF) #65 billion
+
+sum(mpa18$Rev_DIF)/sum(mpa18$Rev_DIF != 0) 
+
+sum(mpa18$Rev_DIF <= 0)
+sum(mpa18$Rev_DIF >= 0)
 
 
-### OLD ANALYSIS
+
+### WHO WINS AND LOSES?
 
 
-mpa %>% group_by(DUID) %>% summarise(SUM = sum(PRICE), COUNT = n(), MEAN = SUM/COUNT) %>% arrange(SUM)#winners 
-mpa %>% group_by(DUID) %>% summarise(SUM = sum(PRICE), COUNT = n(), MEAN = SUM/COUNT) %>% arrange(-SUM)#losers
+mpa %>% group_by(DUID) %>% summarise(RRPsum = sum(Rev_RRP), LMPsum = sum(Rev_LMP),
+                                       DIFFsum = sum(Rev_DIF), COUNT = sum(Rev_DIF != 0), MEAN = DIFFsum/COUNT, 
+                                       REGIONID = REGIONID[1], Participant = Participant[1], 
+                                       Fuel.Type = Fuel.Type[1]) %>% 
+    arrange(-DIFFsum)#winners in change to LMP
+
+mpa18 %>% group_by(DUID) %>% summarise(RRPsum = sum(Rev_RRP), LMPsum = sum(Rev_LMP),
+                                       DIFFsum = sum(Rev_DIF), COUNT = sum(Rev_DIF != 0), MEAN = DIFFsum/COUNT, 
+                                       REGIONID = REGIONID[1], Participant = Participant[1], 
+                                       Fuel.Type = Fuel.Type[1]) %>% 
+    arrange(DIFFsum)#losers in change to LMP
+
+#losers make sense as they do not strategically bid (always bidding at floor and hence adding to congestion)
+
+#loser w/o wind
+mpa18 %>% filter(Fuel.Type != "Wind") %>% 
+    group_by(DUID) %>% summarise(RRPsum = sum(Rev_RRP), LMPsum = sum(Rev_LMP),
+                                       DIFFsum = sum(Rev_DIF), COUNT = sum(Rev_DIF != 0), MEAN = DIFFsum/COUNT, 
+                                       REGIONID = REGIONID[1], Participant = Participant[1], 
+                                       Fuel.Type = Fuel.Type[1]) %>% 
+    arrange(DIFFsum)#losers 
+
+### FUEL
+mpa %>% group_by(Fuel.Type) %>% summarise(RRPsum = sum(Rev_RRP), LMPsum = sum(Rev_LMP),
+                                       DIFFsum = sum(Rev_DIF), COUNT = sum(Rev_DIF != 0), MEAN = DIFFsum/COUNT) %>% 
+    arrange(-DIFFsum)#winners in change to LMP
 
 
-#by fuel
-fuel_year <- mpa_comb %>% group_by(Fuel.Type, YEAR = year(SETTLEMENTDATE))  %>% 
-    summarise(SUM = sum(PRICE), 
-              COUNT = n(), MEAN = SUM/COUNT) %>% arrange(Fuel.Type, YEAR)
 
-mpa_comb %>% group_by(Fuel.Type) %>% 
-    summarise(SUM_POS = sum(PRICE[PRICE>0]), 
-              SUM_NEG = sum(PRICE[PRICE<0]),
-              COUNT_POS = sum(PRICE>0),
-              COUNT_NEG = sum(PRICE<0))
+#how many pos and neg DIFFsums
+mpa18 %>% group_by(Fuel.Type) %>% 
+    summarise(SUM_POS = sum(Rev_DIF[Rev_DIF>0]), 
+              SUM_NEG = sum(Rev_DIF[Rev_DIF<0]),
+              COUNT_POS = sum(Rev_DIF>0),
+              COUNT_NEG = sum(Rev_DIF<0))
 
 
-mpa %>% group_by(DUID) %>% 
-    summarise(SUM_POS = sum(PRICE[PRICE>0]), 
-              SUM_NEG = sum(PRICE[PRICE<0]),
-              COUNT_POS = sum(PRICE>0),
-              COUNT_NEG = sum(PRICE<0)) %>% 
-    merge(fuel, by = "DUID") %>% arrange(-SUM_POS) %>% as_tibble()#losers in current system
-
-mpa %>% group_by(DUID) %>% 
-    summarise(SUM_POS = sum(PRICE[PRICE>0]), 
-              SUM_NEG = sum(PRICE[PRICE<0]),
-              COUNT_POS = sum(PRICE>0),
-              COUNT_NEG = sum(PRICE<0)) %>% 
-    merge(fuel, by = "DUID") %>% arrange(SUM_NEG) %>% as_tibble()#winners 
-
+#over time
+mpa18 %>% group_by(MONTH = month(SETTLEMENTDATE)) %>% 
+    summarise(RRPsum = sum(Rev_RRP), LMPsum = sum(Rev_LMP),
+              DIFFsum = sum(Rev_DIF), COUNT = sum(Rev_DIF != 0), MEAN = DIFFsum/COUNT) %>% 
+    arrange(MONTH)#winners in change to LMP
 

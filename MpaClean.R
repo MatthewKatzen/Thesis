@@ -27,44 +27,86 @@ fuel <- read.csv("data/dontupload/GenFuelTypeNemSight.csv", stringsAsFactors = F
 
 fwrite(fuel, "D:/Thesis/Data/Fuel_cleaned.csv")
 
+#get all yearmonths
+year <- as.character(c(2009:2019))
+months <- c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
+yearmonths <- NULL
+for (i in year){
+    if (i == "2009"){
+        temp <- paste0(i, months[7:12])
+    } else if (i == "2019"){
+        temp <- paste0(i, months[1:6])
+    } else{
+        temp <- paste0(i, months)
+    }
+    yearmonths <- c(yearmonths,temp)
+}
 
+### RRP 
+rrpfull <- yearmonths %>% map(~ rrp.fun(.x)) %>% 
+    rbindlist()
 
-
-### RRP DATA 2018 
-yearmonths <- c("201801", "201802", "201803", "201804", "201805", "201806", "201807", "201808", "201809", "201810", "201811", "201812")
-
-rrp18 <- yearmonths %>% map(~ rrp.fun(.x)) %>% 
-    bind_rows()
-
-fwrite(rrp18, "D:/Thesis/Data/RRP/rrp18.csv")
+fwrite(rrpfull, "D:/Thesis/Data/RRP/rrpfull.csv")
 
 ### GENERATION
+for (i in year){
+    if (i == "2009"){
+        temp <- paste0(i, months[7:12])
+    } else if (i == "2019"){
+        temp <- paste0(i, months[1:6])
+    } else{
+        temp <- paste0(i, months)
+    }
 
-dispatch18 <- yearmonths %>% map(~ dispatch.fun(.x)) %>% 
+    file_location <- paste0("D:/Thesis/Data/DISPATCH/dispatch", i, ".csv")
+    
+    dispatchtemp <- temp %>% map(~ dispatch.fun(.x)) %>% 
+        rbindlist()  
+    
+    fwrite(dispatchtemp, file_location)
+    
+}
+
+
+dispatchfull <- yearmonths %>% map(~ dispatch.fun(.x)) %>% 
     bind_rows()
 
-fwrite(dispatch18, "D:/Thesis/Data/DISPATCH/dispatch18.csv")
+fwrite(dispatchfull, "D:/Thesis/Data/DISPATCH/dispatchfull.csv")
 
 
 ### MERGE 
 
-mpa18 <- fread("D:/Thesis/Data/MPA2/mpa_cleaned.csv", stringsAsFactors = FALSE, drop = 1) %>% #mpa
+#merge mpa, fueltype, rrp data
+mpa_nodisp <- fread("D:/Thesis/Data/MPA2/mpa_cleaned.csv", stringsAsFactors = FALSE, drop = 1) %>% #mpa
     mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE)) %>% 
-    filter(year(SETTLEMENTDATE) == "2018", month(SETTLEMENTDATE) == "12") %>% #2018
     inner_join(fread("D:/Thesis/Data/Fuel_cleaned.csv", stringsAsFactors = FALSE, drop = 1),
                by = "DUID") %>%  #fuel
-    inner_join(fread("D:/Thesis/Data/RRP/rrp18.csv", stringsAsFactors = FALSE, drop = 1) %>% 
+    inner_join(fread("D:/Thesis/Data/RRP/rrpfull.csv", stringsAsFactors = FALSE) %>% 
                    mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE)), 
-               by = c("SETTLEMENTDATE", "REGIONID")) %>% #rrp
-    inner_join(fread("D:/Thesis/Data/DISPATCH/dispatch18.csv", stringsAsFactors = FALSE) %>% 
-                   mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE)),
-               by = c("DUID", "SETTLEMENTDATE")) #dispatch
+               by = c("SETTLEMENTDATE", "REGIONID"))#rrp
 
-fwrite(mpa18, "D:/Thesis/Data/mpa18.csv")
+fwrite(mpa_nodisp, "D:/Thesis/Data/mpa_nodisp.csv")
+
+#loop through years to add dispatch
+for (i in year){
+    temp <- mpa_nodisp %>% 
+        inner_join(fread(paste0("D:/Thesis/Data/DISPATCH/dispatch", i, ".csv"),
+                         stringsAsFactors = FALSE) %>%
+                       mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE)),
+                   by = c("DUID", "SETTLEMENTDATE")) #dispatch
+    
+    fwrite(temp, paste0("D:/Thesis/Data/COMPLETE/mpa", i, ".csv"))
+}
 
 
+data_location <- "D:/Thesis/Data/COMPLETE"
+files <- paste0(data_location, "/", list.files(data_location))
+
+mpa_complete <- files %>% map(~ fread(.x, stringsAsFactors = FALSE)) %>% 
+    rbindlist() %>% mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
 
 
+fwrite(mpa_complete, "D:/Thesis/Data/COMPLETE/mpacomplete.csv")
 
 
 ###MISSING GENS

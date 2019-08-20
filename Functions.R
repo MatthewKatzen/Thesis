@@ -4,6 +4,7 @@
 library(tidyverse)
 library(openxlsx)
 library(sqldf)
+library(data.table)
 setwd("C:/Users/Matthew/Google Drive/Uni/19/Thesis/Analysis/Dissordely Bidding")
 external.data.location <- "D:/Thesis/Data" #for big data
 #"C:/Users/Matthew/Downloads/Temp"
@@ -254,7 +255,7 @@ dispatch.fun <- function(yearmonth){
         unzip(temp, paste0("PUBLIC_DVD_DISPATCHLOAD_", yearmonth, "010000.CSV"),
               exdir = external.data.location)
     }
-    dispatch <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
+    dispatch <- fread(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
     dispatch <- dispatch %>% 
         filter(INTERVENTION == 0) %>% 
         select(DUID, SETTLEMENTDATE, TOTALCLEARED) %>% 
@@ -306,15 +307,15 @@ rrp.fun <- function(yearmonth){
         unzip(temp, paste0("PUBLIC_DVD_DISPATCHPRICE_", yearmonth, "010000.CSV"),
               exdir = external.data.location)
     }
-    rrp.fun <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE) %>% 
+    rrp <- fread(csv.name, sep=",", stringsAsFactors = FALSE) %>% 
         filter(INTERVENTION == 0) %>% 
-        select(SETTLEMENTDATE, REGIONID, RRP)
+        select(SETTLEMENTDATE, REGIONID, RRP) %>% 
         mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
     
     if(url != 0){
         unlink(temp) #delete zip
     }    
-    return(rrp.fun)
+    return(rrp)
 }
 
 loop.fun <- function(fun,...){
