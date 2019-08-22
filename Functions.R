@@ -406,3 +406,11 @@ mpa.fun <- function(DATE){
     unlink(temp)
     unlink(temp2)
 }   
+
+###RESTART
+#restart session and clear ram
+restart<- function(){
+    gc()
+    rm(list = ls())
+    .rs.restartR()    
+}
