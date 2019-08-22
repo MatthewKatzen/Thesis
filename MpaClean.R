@@ -44,9 +44,14 @@ for (i in year){
 
 ### RRP 
 rrpfull <- yearmonths %>% map(~ rrp.fun(.x)) %>% 
+    group_by(INTERVAL = cut(SETTLEMENTDATE, breaks = "30 min"), REGIONID) %>% #add RRP30
+    mutate(RRP30 = mean(RRP)) %>% 
+    ungroup() %>% 
+    select(-INTERVAL) %>% 
     rbindlist()
 
 fwrite(rrpfull, "D:/Thesis/Data/RRP/rrpfull.csv")
+
 
 ### GENERATION
 for (i in year){
@@ -104,7 +109,6 @@ files <- paste0(data_location, "/", list.files(data_location))
 
 mpa_complete <- files %>% map(~ fread(.x, stringsAsFactors = FALSE)) %>% 
     rbindlist() %>% mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
-
 
 fwrite(mpa_complete, "D:/Thesis/Data/COMPLETE/mpacomplete.csv")
 
