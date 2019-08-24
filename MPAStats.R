@@ -82,13 +82,15 @@ mpa %>% group_by(MONTH = floor_date(SETTLEMENTDATE, "month"), REGIONID, Fuel.Typ
     geom_line(size = 2) +
     facet_wrap(~ REGIONID)
 
-#how many pos and neg DIFFsums
-mpa %>% group_by(Fuel.Type) %>% 
-    summarise(SUM_POS = sum(Rev_DIF[Rev_DIF>0]), 
-              SUM_NEG = sum(Rev_DIF[Rev_DIF<0]),
-              COUNT_POS = sum(Rev_DIF>0),
-              COUNT_NEG = sum(Rev_DIF<0))
 
 
 
+#ADD zeroes to month data if missing
+mpa %>% group_by(MONTH = floor_date(SETTLEMENTDATE, "month"), REGIONID, Fuel.Type) %>% 
+    summarise(DIFFsum = -sum(Rev_DIF)) %>% 
+    ungroup() %>% 
+    pad(group = c("REGIONID", "Fuel.Type")) %>% replace_na(list(DIFFsum = 0)) %>%  #add missing dates
+    ggplot(aes(x = MONTH, y = DIFFsum, colour = Fuel.Type)) +
+    geom_line(size = 2) +
+    facet_wrap(~ REGIONID)
 
