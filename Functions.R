@@ -33,7 +33,8 @@ rhs.fun <- function(yearmonth){
     #Clean RHS and MV
     rhs <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
     rhs <- rhs %>% filter(MARGINALVALUE != 0) %>% #remove unconstrained
-        filter(substr(CONSTRAINTID,1,1) %in% c('Q','N','V','S','T','I')) #no fcas and other weird types
+        filter(substr(CONSTRAINTID,1,1) %in% c('Q','N','V','S','T','I')) %>%  #no fcas and other weird types
+        mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
     if(url != 0){
         unlink(temp) #delete zip
     }    
@@ -84,7 +85,9 @@ eqs.fun <- function(constraint, effective.ym) {
         filter(GENCONID == constraint) %>% #get constraint we care about
         #distinct() %>% #remove duplicate rows
         filter(SPD_TYPE %in% c("T","I") | SPD_ID == "Scale") %>%  #only get scale value, interconnector, and generator/load data
-        mutate(EFFECTIVEDATE = ymd_hms(EFFECTIVEDATE))
+        mutate(EFFECTIVEDATE = ymd_hms(EFFECTIVEDATE)) %>% 
+        mutate(DUID = str_replace(SPD_ID, "\\..*","")) %>% #remove SPD_ID left of `.`
+        select(-SPD_ID)
     if(url != 0){ #checks if previous if statement was run
         unlink(temp) #delete zip
     }
@@ -152,7 +155,7 @@ bids.fun <- function(yearmonth, generators){
     return(as.data.frame(bids))
 }
 
-bids_d.fun <- function(yearmonth, generator){
+bids_d.fun <- function(yearmonth, generators){
     external.data.location <- "D:/Thesis/Data/BIDS_D" #for big data
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
@@ -169,9 +172,9 @@ bids_d.fun <- function(yearmonth, generator){
               exdir = external.data.location)
     }
     bids <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
-    bids <- bids %>% filter(DUID == generator, BIDTYPE== "ENERGY") %>%
-    select(DUID, SETTLEMENTDATE, OFFERDATE, VERSIONNO, PERIODID, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3,
-           BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10)
+    bids <- bids %>% filter(DUID %in% generators, BIDTYPE== "ENERGY") %>%
+    select(DUID, SETTLEMENTDATE, INTERVAL_DATETIME, OFFERDATE, VERSIONNO, PERIODID, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3,
+           BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10, MAXAVAIL)
     if(url != 0){
         unlink(temp) #delete zip
     } 
@@ -198,21 +201,43 @@ fixbid.fun <- function(data){
     return(data)
 }
     
-###MATCH ACTUAL BIDS USED 
-#This is used for matchign what BID files are used throughout the day
-#Not used yet
+#BID OFFER TRACK
+#get info of bids
+bids_d.fun <- function(yearmonth, generators){
+    external.data.location <- "D:/Thesis/Data/BIDS_TRCK" #for big data
+    year <- substr(yearmonth, 1, 4)
+    month <- substr(yearmonth, 5, 6)
+    url <- 0
+    csv.name <- paste0(external.data.location, "/PUBLIC_DVD_BIDPEROFFER_D_", yearmonth, "010000.CSV")
+    if(!file.exists(csv.name)){
+        url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", year,"/MMSDM_",
+                      year,"_", month, "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_BIDPEROFFER_D_",
+                      yearmonth,
+                      "010000.zip")
+        temp <- tempfile()
+        download.file(url, temp, mode="wb", method = "curl")
+        unzip(temp, paste0("PUBLIC_DVD_BIDPEROFFER_D_", yearmonth, "010000.CSV"), 
+              exdir = external.data.location)
+    }
+    bids <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
+    bids <- bids %>% filter(DUID %in% generators, BIDTYPE== "ENERGY") %>%
+        select(DUID, SETTLEMENTDATE, INTERVAL_DATETIME, OFFERDATE, VERSIONNO, PERIODID, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3,
+               BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10, MAXAVAIL)
+    if(url != 0){
+        unlink(temp) #delete zip
+    } 
+    return(as.data.frame(bids))
+}
 
-# yearmonth <- "201905" #change this to the date the constraint became effective
-# year <- substr(yearmonth, 1, 4)
-# month <- substr(yearmonth, 5, 6)
-# url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", year,"/MMSDM_", year, "_", month, "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_DISPATCHOFFERTRK_", yearmonth, "010000.zip")
-# temp <- tempfile()
-# download.file(url, temp, mode="wb")
-# unzip(temp, paste0("PUBLIC_DVD_DISPATCHOFFERTRK_", yearmonth, "010000.CSV"), exdir = location)
-# 
-# match <- read.csv(paste0("data/PUBLIC_DVD_DISPATCHOFFERTRK_", yearmonth, "010000.CSV"), sep=",",skip=1)
-# match %>% filter(DUID == "GORDON", BIDTYPE== "ENERGY") 
 
+
+
+
+
+
+
+#DISPATCHOFFERTRK
+#get offer description
 dispatch.tracker.fun <- function(yearmonth, generator){
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
