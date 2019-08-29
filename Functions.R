@@ -200,41 +200,6 @@ fixbid.fun <- function(data){
     data[,colnames(temp)] <- temp #add back into original data
     return(data)
 }
-    
-#BID OFFER TRACK
-#get info of bids
-bids_d.fun <- function(yearmonth, generators){
-    external.data.location <- "D:/Thesis/Data/BIDS_TRCK" #for big data
-    year <- substr(yearmonth, 1, 4)
-    month <- substr(yearmonth, 5, 6)
-    url <- 0
-    csv.name <- paste0(external.data.location, "/PUBLIC_DVD_BIDPEROFFER_D_", yearmonth, "010000.CSV")
-    if(!file.exists(csv.name)){
-        url <- paste0("http://nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM/", year,"/MMSDM_",
-                      year,"_", month, "/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_BIDPEROFFER_D_",
-                      yearmonth,
-                      "010000.zip")
-        temp <- tempfile()
-        download.file(url, temp, mode="wb", method = "curl")
-        unzip(temp, paste0("PUBLIC_DVD_BIDPEROFFER_D_", yearmonth, "010000.CSV"), 
-              exdir = external.data.location)
-    }
-    bids <- read.csv(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
-    bids <- bids %>% filter(DUID %in% generators, BIDTYPE== "ENERGY") %>%
-        select(DUID, SETTLEMENTDATE, INTERVAL_DATETIME, OFFERDATE, VERSIONNO, PERIODID, BANDAVAIL1, BANDAVAIL2, BANDAVAIL3,
-               BANDAVAIL4, BANDAVAIL5, BANDAVAIL6, BANDAVAIL7, BANDAVAIL8, BANDAVAIL9, BANDAVAIL10, MAXAVAIL)
-    if(url != 0){
-        unlink(temp) #delete zip
-    } 
-    return(as.data.frame(bids))
-}
-
-
-
-
-
-
-
 
 #DISPATCHOFFERTRK
 #get offer description
