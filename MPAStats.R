@@ -11,21 +11,27 @@ mpa <- fread("D:/Thesis/Data/COMPLETE/mpacomplete.csv", stringsAsFactors = FALSE
 
 ### REVENUE
 
-mpa <- mpa %>% mutate(Rev_RRP_5 = RRP*TOTALCLEARED) %>% 
+mpa <- mpa %>% mutate(Rev_0 = 0) %>% 
     mutate(Rev_RRP_30 = RRP30*TOTALCLEARED) %>% 
     mutate(Rev_LMP = LMP*TOTALCLEARED) %>% 
-    mutate(Rev_DIF = Rev_LMP - Rev_RRP_30)  #how much you benefit from change to LMP system
+    mutate(Rev_LMP0 = pmax(LMP, 0)*TOTALCLEARED) %>% 
+    mutate(Rev_DIF = Rev_LMP - Rev_RRP_30) %>%   #how much you benefit from change to LMP system
+    mutate(Rev_DIF_0 = pmax(Rev_LMP, Rev_LMP0) - Rev_RRP_30) #assume no neg LMP (no neg bids)
 
 head(mpa)
 
 
 ### How much would system save by changing?
 sum(mpa$Rev_DIF) #60 billion over 10 years
+sum(mpa$Rev_DIF_0) #17 billion over 10 years
 
 
 mpa %>% group_by(YEAR = year(SETTLEMENTDATE)) %>% 
-    summarise(RRP30sum = sum(Rev_RRP_30), LMPsum = sum(Rev_LMP),
-              DIFFsum = sum(Rev_DIF), COUNT = sum(Rev_DIF != 0), MEAN = DIFFsum/COUNT) %>% 
+    summarise(RRP30sum = sum(Rev_RRP_30), 
+              LMPsum = sum(Rev_LMP),
+              LMP0sum = sum(Rev_LMP0),
+              DIFFsum = sum(Rev_DIF), COUNT = sum(Rev_DIF != 0), MEAN = DIFFsum/COUNT,
+              DIFFsum0 = sum(Rev_DIF_0), COUNT = sum(Rev_DIF_0 != 0), MEAN = DIFFsum0/COUNT) %>% 
     arrange(YEAR)#by year
 
 
@@ -82,8 +88,6 @@ mpa %>% group_by(MONTH = floor_date(SETTLEMENTDATE, "month"), REGIONID, Fuel.Typ
     ggplot(aes(x = MONTH, y = DIFFsum, colour = Fuel.Type)) +
     geom_line(size = 2) +
     facet_wrap(~ REGIONID)
-
-
 
 
 #ADD zeroes to month data if missing
