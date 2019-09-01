@@ -17,7 +17,7 @@ fwrite(mpa, "D:/Thesis/Data/MPA2/mpa_cleaned.csv")
 
 ###FUEL
 fuel <- read.csv("data/dontupload/GenFuelTypeNemSight.csv", stringsAsFactors = FALSE) %>% 
-    select(Region, DUID, Participant, Fuel.Type, Emission.Factor) %>%  #keep cols of interest
+    select(Region, DUID, Participant, Station, Fuel.Type, Emission.Factor) %>%  #keep cols of interest
     rename(REGIONID = Region) %>% 
     mutate(REGIONID = case_when(REGIONID == "Queensland" ~ "QLD1",
                                 REGIONID == "New South Wales" ~ "NSW1",
@@ -140,3 +140,44 @@ rrp %>% filter(SETTLEMENTDATE == ymd_hms("2018-12-21 20:30:00"))#SA RRP = 83.979
 #LP = RRP - MPA = 83.979 - 2.22 = 81.75958
 #WHICH EQUALS PRICE IN MPA_COMB!
 #t/f MPA PRICE = LMP
+
+#ADD REVENUE
+mpa <- mpa %>% mutate(Rev_0 = 0) %>% 
+    mutate(Rev_RRP_30 = RRP30*TOTALCLEARED) %>% 
+    mutate(Rev_LMP = LMP*TOTALCLEARED) %>% 
+    mutate(Rev_LMP0 = pmax(LMP, 0)*TOTALCLEARED) %>% 
+    mutate(Rev_DIF = Rev_LMP - Rev_RRP_30) %>%   #how much you benefit from change to LMP system
+    mutate(Rev_DIF_0 = pmax(Rev_LMP, Rev_LMP0) - Rev_RRP_30) #assume no neg LMP (no neg bids)
+
+fwrite(mpa, "D:/Thesis/Data/COMPLETE/mpacomplete.csv")
+
+#ADD AGE AND GEN/LOAD
+weekly <- fread("D:/Thesis/Data/weekly_data_construct_2.csv", stringsAsFactors = FALSE)
+colnames(disp_weekly)
+weekly_cleaned <- weekly %>% mutate(Station = station_name) %>% 
+    select(Year, Week, Station, output_week) %>% 
+    mutate(DATE = ymd(str_c(Year, "-01-01")) + weeks(Week - 1)) %>% 
+    filter(output_week != 0) %>% 
+    group_by(Station) %>% 
+    summarise(Start = sort(DATE)[1])
+
+fuel <- read.csv("data/dontupload/GenFuelTypeNemSight.csv", stringsAsFactors = FALSE) %>% 
+    select(DUID, Station, Type)
+
+merged <- fuel %>% inner_join(weekly_cleaned, by = 'Station')#merge fuel and station name
+
+missing <- fuel[which(!(fuel$Station %in% weekly_cleaned$Station)) %>% as.numeric(),] #gens in fuel but not weekly
+
+mpa_missing <- mpa %>% select(DUID) %>% unique() %>% filter(DUID %in% missing$DUID) %>% as.list() %>% .$DUID#gens in mpa and fuel(missing)
+
+
+missing_df <- read.csv("data/dontupload/missing.csv") %>% #data for missing in mpa
+    mutate(Start = ymd(str_c(Year, "-01-01"))) %>% #create year
+    mutate(Type = "Gen")#add Type
+
+
+merged2 <- rbind(missing_df %>% select(-Station, -Year), merged %>% select(-Station))#merged and manual year find
+
+mpa_age <- mpa %>% inner_join(merged2, by = "DUID")
+
+fwrite(mpa_age, "D:/Thesis/Data/COMPLETE/mpa_age.csv")
