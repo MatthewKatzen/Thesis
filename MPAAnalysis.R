@@ -2,6 +2,7 @@ library(tidyverse)
 library(tidyr)
 library(lubridate)
 library(data.table)
+library(padr)
 #DIFFSUM v MONTH, grouped by Fuel, facet by State
 mpa %>% group_by(MONTH = floor_date(SETTLEMENTDATE, "month"), REGIONID, Fuel.Type) %>% 
     summarise(DIFFsum = sum(Rev_DIF)) %>% 
@@ -9,7 +10,11 @@ mpa %>% group_by(MONTH = floor_date(SETTLEMENTDATE, "month"), REGIONID, Fuel.Typ
     pad(group = c("REGIONID", "Fuel.Type")) %>% replace_na(list(DIFFsum = 0)) %>%  #add missing dates
     ggplot(aes(x = MONTH, y = DIFFsum, colour = Fuel.Type)) +
     geom_line(size = 2) +
-    facet_wrap(~ REGIONID) 
+    facet_wrap(~ REGIONID) +
+    ggtitle("Revenue Change in swith to LMP - Grouped by Fuel Type and State")+
+    xlab("")+
+    ylab("Rev Change")
+    
 
 #no wind
 mpa %>% group_by(MONTH = floor_date(SETTLEMENTDATE, "month"), REGIONID, Fuel.Type) %>% 

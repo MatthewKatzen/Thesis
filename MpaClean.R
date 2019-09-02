@@ -141,17 +141,22 @@ rrp %>% filter(SETTLEMENTDATE == ymd_hms("2018-12-21 20:30:00"))#SA RRP = 83.979
 #WHICH EQUALS PRICE IN MPA_COMB!
 #t/f MPA PRICE = LMP
 
+
+
 #ADD REVENUE
-mpa <- mpa %>% mutate(Rev_0 = 0) %>% 
+mpa_rev <- fread("D:/Thesis/Data/COMPLETE/mpacomplete.csv") %>% 
     mutate(Rev_RRP_30 = RRP30*TOTALCLEARED) %>% 
     mutate(Rev_LMP = LMP*TOTALCLEARED) %>% 
     mutate(Rev_LMP0 = pmax(LMP, 0)*TOTALCLEARED) %>% 
     mutate(Rev_DIF = Rev_LMP - Rev_RRP_30) %>%   #how much you benefit from change to LMP system
     mutate(Rev_DIF_0 = pmax(Rev_LMP, Rev_LMP0) - Rev_RRP_30) #assume no neg LMP (no neg bids)
 
-fwrite(mpa, "D:/Thesis/Data/COMPLETE/mpacomplete.csv")
+fwrite(mpa_rev, "D:/Thesis/Data/COMPLETE/mpa_rev.csv")
 
-#ADD AGE AND GEN/LOAD
+
+
+
+### ADD AGE AND GEN/LOAD
 weekly <- fread("D:/Thesis/Data/weekly_data_construct_2.csv", stringsAsFactors = FALSE)
 colnames(disp_weekly)
 weekly_cleaned <- weekly %>% mutate(Station = station_name) %>% 
@@ -178,6 +183,12 @@ missing_df <- read.csv("data/dontupload/missing.csv") %>% #data for missing in m
 
 merged2 <- rbind(missing_df %>% select(-Station, -Year), merged %>% select(-Station))#merged and manual year find
 
-mpa_age <- mpa %>% inner_join(merged2, by = "DUID")
+fwrite(merged2, "D:/Thesis/Data/COMPLETE/age.csv")
+
+mpa_age <- fread("D:/Thesis/Data/COMPLETE/mpa_rev.csv") %>% 
+    inner_join(fread("D:/Thesis/Data/COMPLETE/age.csv"), by = "DUID")
 
 fwrite(mpa_age, "D:/Thesis/Data/COMPLETE/mpa_age.csv")
+
+
+

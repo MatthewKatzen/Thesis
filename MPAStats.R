@@ -9,20 +9,6 @@ mpa <- fread("D:/Thesis/Data/COMPLETE/mpacomplete.csv", stringsAsFactors = FALSE
     mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
 
 
-### ADD REVENUE
-
-mpa <- mpa %>% mutate(Rev_0 = 0) %>% 
-    mutate(Rev_RRP_30 = RRP30*TOTALCLEARED) %>% 
-    mutate(Rev_LMP = LMP*TOTALCLEARED) %>% 
-    mutate(Rev_LMP0 = pmax(LMP, 0)*TOTALCLEARED) %>% 
-    mutate(Rev_DIF = Rev_LMP - Rev_RRP_30) %>%   #how much you benefit from change to LMP system
-    mutate(Rev_DIF_0 = pmax(Rev_LMP, Rev_LMP0) - Rev_RRP_30) #assume no neg LMP (no neg bids)
-
-fwrite(mpa, "D:/Thesis/Data/COMPLETE/mpa_rev.csv")
-
-head(mpa)
-
-
 ### How much would system save by changing?
 sum(mpa$Rev_DIF) #60 billion over 10 years
 sum(mpa$Rev_DIF_0) #17 billion over 10 years

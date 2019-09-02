@@ -5,12 +5,14 @@ library(data.table)
 #DIFFSUM v MONTH, grouped by Fuel, facet by State
 mpa %>% group_by(MONTH = floor_date(SETTLEMENTDATE, "month"), REGIONID, Fuel.Type) %>% 
     summarise(DIFFsum0 = sum(Rev_DIF_0)) %>% 
-    filter(year(MONTH)>2012) %>% 
     ungroup() %>% 
     pad(group = c("REGIONID", "Fuel.Type")) %>% replace_na(list(DIFFsum0 = 0)) %>%  #add missing dates
     ggplot(aes(x = MONTH, y = DIFFsum0, colour = Fuel.Type)) +
     geom_line(size = 2) +
-    facet_wrap(~ REGIONID) 
+    facet_wrap(~ REGIONID) +
+    ggtitle("Revenue Change in swith to LMP - Assume LMP cannot be Neg")+
+    xlab("") +
+    ylab("Rev Change")
 
 #no wind
 mpa %>% group_by(MONTH = floor_date(SETTLEMENTDATE, "month"), REGIONID, Fuel.Type) %>% 
