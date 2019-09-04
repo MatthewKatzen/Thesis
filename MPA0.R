@@ -39,4 +39,3 @@ mpa %>% filter(!(Fuel.Type %in% c("Wind", "Solar")), year(SETTLEMENTDATE) > 2012
     arrange(SUMdiff) 
 
 
-

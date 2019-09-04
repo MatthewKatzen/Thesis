@@ -23,7 +23,7 @@ mpa %>% filter(Fuel.Type == "Wind") %>%
 
 #Individual Wind True LMP
 mpa %>% filter(Fuel.Type == "Wind") %>% 
-    group_by(MONTH = floor_date(SETTLEMENTDATE, "month"), DUID) %>% 
+    group_by(MONTH = floor_date(SETTLEMENTDATE, "year"), DUID) %>% 
     summarise(DIFFsum = sum(Rev_DIF), Start = year(Start[1])) %>% 
     ungroup() %>% 
     ggplot(aes(x = MONTH, y = DIFFsum, group = DUID, colour = Start)) +
@@ -37,21 +37,42 @@ mpa %>% filter(Fuel.Type == "Wind") %>%
 
 mpa <- fread("D:/Thesis/Data/COMPLETE/mpa_age.csv") %>% mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
 
-#AVE Rev by year of production
-temp2 <- mpa %>% filter(Fuel.Type == "Wind") %>% 
-    group_by(MONTH = floor_date(SETTLEMENTDATE, "month"),  YEAR = year(Start)) %>% 
+#AVE REV of production (LMP0)
+mpa_ave_fuel <- mpa %>% 
+    group_by(YEAR = floor_date(SETTLEMENTDATE, "year"), Fuel.Type) %>% 
     summarise(Ave_Rev = ifelse(sum(TOTALCLEARED)>0,
-                               sum(Rev_RRP_30*TOTALCLEARED)/sum(TOTALCLEARED),
+                               sum(Rev_RRP_30)/sum(TOTALCLEARED),
                                NA),
               Ave_Rev_LMP = ifelse(sum(TOTALCLEARED)>0,
-                                   sum(Rev_LMP*TOTALCLEARED)/sum(TOTALCLEARED),
+                                   sum(Rev_LMP)/sum(TOTALCLEARED),
+                                   NA),
+              Dif = Ave_Rev_LMP - Ave_Rev)
+
+mpa_ave_fuel %>% 
+    ggplot(aes(x = YEAR, y = Dif, group = Fuel.Type, colour = Fuel.Type)) + 
+    geom_line(size = 2)+
+    #scale_color_gradient(low = "blue", high = "red")+
+    ggtitle("Average Revenue change in swith to LMP")
+
+#AVE Rev by year of production
+temp2 <- mpa %>% 
+    group_by(YEAR = floor_date(SETTLEMENTDATE, "year"),  START = year(Start), Fuel.Type) %>% 
+    summarise(Ave_Rev = ifelse(sum(TOTALCLEARED)>0,
+                               sum(Rev_RRP_30)/sum(TOTALCLEARED),
+                               NA),
+              Ave_Rev_LMP = ifelse(sum(TOTALCLEARED)>0,
+                                   sum(Rev_LMP0)/sum(TOTALCLEARED),
                                    NA),
               Dif = Ave_Rev_LMP - Ave_Rev)
 
 temp2 %>% 
-    ggplot(aes(x = MONTH, y = Dif, group = YEAR, colour = YEAR)) + 
-    geom_line(size = 2)+
-    scale_color_gradient(low = "blue", high = "red")
+    ggplot(aes(x = YEAR, y = Dif, group = START, colour = START)) + 
+    geom_line(size = 2) +
+    scale_color_gradient(low = "blue", high = "red") +
+    facet_wrap(~ Fuel.Type) +
+    ggtitle("Average Revenue change in swith to LMP - Assuming No Neg LMP")
+
+
 
 temp <- mpa %>% filter(Fuel.Type == "Wind") %>% mutate(Year = year(Start)) %>% select(DUID, Year) 
 

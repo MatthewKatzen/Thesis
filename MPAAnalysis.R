@@ -29,9 +29,9 @@ mpa %>% group_by(MONTH = floor_date(SETTLEMENTDATE, "month"), REGIONID, Fuel.Typ
 
 #Clearly something going on in SA wind
 #which makes sense, lots of wind bidding at floor price and congesting network
-mpa %>% filter(REGIONID == "SA1", Fuel.Type == "Wind", year(SETTLEMENTDATE) == "2018") %>% 
+mpa %>% filter(Fuel.Type == "Wind", year(SETTLEMENTDATE) == "2018") %>% 
     group_by(DUID, MONTH = floor_date(SETTLEMENTDATE, "day")) %>% 
-    summarise(SUMdiff = sum(Rev_DIF)) %>% 
+    summarise(SUMdiff = sum(Rev_DIF_0)) %>% 
     arrange(SUMdiff)
 
 #Non wind/solar (only strategic bidders), wind isn't necessarily a problem as their MC = 0
