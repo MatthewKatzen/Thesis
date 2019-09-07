@@ -3,13 +3,7 @@ library(tidyr)
 library(lubridate)
 library(data.table)
 #CREATE MPA FILE July '09 - June '19
-#Variables in MPA:
-
-#"SETTLEMENTDATE": 5 min interval, "DUID":Gen/Load id, "LMP": Locational Marginal Price,
-#"CONSTRAINED": Dont really get it, "REGIONID": State, "Participant": company, "Fuel.Type", "Emission.Factor": [0,1],
-#"RRP": Regional Reference Price at 5 min, "RRP30": average over 30 min interval, "TOTALCLEARED": quantity MWH, 
-#"Rev_RRP_30": Revenue at 5 min interval at 30RRP price, "Rev_LMP": Revenue from, 
-#"Rev_LMP0" Revenue assuming LMP > 0, "Rev_DIF"         "Rev_DIF_0"       "Start":Year of Comssions           "Type":Gen/Load  
+#with fuel, owner, age, rev data
 
 
 data_location <- "D:/Thesis/Data/MPA2"

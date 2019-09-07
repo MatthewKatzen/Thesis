@@ -116,7 +116,7 @@ mpa_year_fuel %>%
 
 #without liquid fuel (outlier)
 mpa_year_fuel %>% filter(Fuel.Type != "Liquid Fuel") %>% 
-    ggplot(aes(x = YEAR, y = Dif_Ave, group = Fuel.Type, colour = Fuel.Type)) + 
+    ggplot(aes(x = YEAR, y = Dif_Ave_0, group = Fuel.Type, colour = Fuel.Type)) + 
     geom_line(size = 2)+
     ggtitle("Average Revenue Increase in switch to LMP - No Liquid Fuel")
 
