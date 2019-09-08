@@ -5,16 +5,16 @@ library(data.table)
 #Create MPA graphs, grouped by DUID, coloured by AGE
 
 
-mpa <- fread("D:/Thesis/Data/COMPLETE/mpa_age.csv") %>% 
-    mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
+mpa <- fread("D:/Thesis/Data/mpa_cleaned.csv") %>% 
+    mutate(settlementdate = ymd_hms(settlementdate))
 
 
 #TOTAL LMP0 WIND DUID MONTH
-mpa %>% filter(Fuel.Type == "Wind") %>% 
-    group_by(MONTH = floor_date(SETTLEMENTDATE, "month"), DUID) %>% 
-    summarise(Dif_Total_0 = sum(Rev_DIF_0), Start = year(Start[1])) %>% 
+mpa %>% filter(fuel_type == "Wind") %>% 
+    group_by(month = floor_date(settlementdate, "month"), duid) %>% 
+    summarise(dif_total_0 = sum(rev_dif_0), age = age[1]) %>% 
     ungroup() %>% 
-    ggplot(aes(x = MONTH, y = Dif_Total_0, group = DUID, colour = Start)) +
+    ggplot(aes(x = month, y = dif_total_0, group = duid, colour = age)) +
     geom_line(size = 1.5)+
     scale_color_gradient(low = "blue", high = "red") +
     ggtitle("WIND ONLY - Revenue Change in swith to LMP - Assume LMP cannot be Neg - Each individual Wind farm coloured by year of commission") +
