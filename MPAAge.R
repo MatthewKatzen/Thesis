@@ -22,32 +22,31 @@ mpa %>% filter(fuel_type == "Wind") %>%
     ylab("Rev Change")
 
 #TOTAL LMP WIND DUID MONTH
-mpa %>% filter(Fuel.Type == "Wind") %>% 
-    group_by(YEAR = floor_date(SETTLEMENTDATE, "year"), DUID) %>% 
-    summarise(Dif_Total = sum(Ave), Start = year(Start[1])) %>% 
+mpa %>% filter(fuel_type == "Wind") %>% 
+    group_by(month = floor_date(settlementdate, "month"), duid) %>% 
+    summarise(dif_total = sum(rev_dif), age = age[1]) %>% 
     ungroup() %>% 
-    ggplot(aes(x = YEAR, y = Dif_Total, group = DUID, colour = Start)) +
-    geom_line(size = 1.5) +
-    scale_color_gradient(low = "blue", high = "red")+
-    ggtitle("WIND ONLY - Revenue Change in swith to LMP - Each individual Wind farm coloured by year of commission")+
+    ggplot(aes(x = month, y = dif_total, group = duid, colour = age)) +
+    geom_line(size = 1.5)+
+    scale_color_gradient(low = "blue", high = "red") +
+    ggtitle("WIND ONLY - Revenue Change in swith to LMP - Each individual Wind farm coloured by year of commission") +
     xlab("") +
     ylab("Rev Change")
 
 ### AVE REV, START + FUEL TYPE
 
-#by YEAR, Grouped FUEL/START
-mpa_year_fuel_start <- mpa %>% 
-    group_by(YEAR = floor_date(SETTLEMENTDATE, "year"),  START = year(Start), Fuel.Type) %>% 
+#by YEAR, Grouped FUEL/age
+mpa_year_fuel_age <- mpa %>% 
+    group_by(year = floor_date(settlementdate, "year"), fuel_type, age) %>% 
     summ_all()
 
 
-mpa_year_fuel_start %>% filter(Fuel.Type =="Wind") %>% 
-    filter(YEAR > ymd_hms("2013-01-01 00:00:00")) %>% 
-    ggplot(aes(x = YEAR, y = Dif_Ave_0, group = START, colour = START)) + 
+mpa_year_fuel_age %>% filter(fuel_type == "Wind") %>% 
+    filter(year > ymd_hms("2013-01-01 00:00:00")) %>% 
+    ggplot(aes(x = year, y = dif_ave, group = age, colour = age)) + 
     geom_line(size = 2) +
     scale_color_gradient(low = "blue", high = "red") +
-    facet_wrap(~ Fuel.Type)
+    facet_wrap(~ fuel_type)
 
 
-temp <- mpa %>% filter(Fuel.Type == "Wind") %>% mutate(Year = year(Start)) %>% select(DUID, Year) 
 

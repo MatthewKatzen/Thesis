@@ -14,51 +14,51 @@ library(padr)
 #output: agregate summires
 summ_all <- function(df){
     df %>% 
-        summarise(Quanity = sum(TOTALCLEARED),
-                  Ave_Rev = ifelse(sum(TOTALCLEARED)>0,
-                                   sum(Rev_RRP_30)/sum(TOTALCLEARED),
+        summarise(quantity = sum(totalcleared),
+                  ave_rev = ifelse(sum(totalcleared)>0,
+                                   sum(rev_rrp_30)/sum(totalcleared),
                                    NA),
-                  Ave_Rev_LMP = ifelse(sum(TOTALCLEARED)>0,
-                                       sum(Rev_LMP)/sum(TOTALCLEARED),
+                  ave_rev_lmp = ifelse(sum(totalcleared)>0,
+                                       sum(rev_lmp)/sum(totalcleared),
                                        NA),
-                  Ave_Rev_LMP0 = ifelse(sum(TOTALCLEARED)>0,
-                                        sum(Rev_LMP0)/sum(TOTALCLEARED),
+                  ave_rev_lmp0 = ifelse(sum(totalcleared)>0,
+                                        sum(rev_lmp0)/sum(totalcleared),
                                         NA),
-                  Total_Rev_RRP = sum(Rev_RRP_30),
-                  Total_Rev_LMP = sum(Rev_LMP),
-                  Total_Rev_LMP0 = sum(Rev_LMP0),
-                  Dif_Ave = Ave_Rev_LMP - Ave_Rev,
-                  Dif_Ave_0 = Ave_Rev_LMP0 - Ave_Rev,
-                  Dif_Total = Total_Rev_LMP - Total_Rev_RRP,
-                  Dif_Total_0 = Total_Rev_LMP0 - Total_Rev_RRP)
+                  total_rev_rrp = sum(rev_rrp_30),
+                  total_rev_lmp = sum(rev_lmp),
+                  total_rev_lmp0 = sum(rev_lmp0),
+                  dif_ave = ave_rev_lmp - ave_rev,
+                  dif_ave_0 = ave_rev_lmp0 - ave_rev,
+                  dif_total = total_rev_lmp - total_rev_rrp,
+                  dif_total_0 = total_rev_lmp0 - total_rev_rrp)
 }
 
 ### Get DATA
 
-mpa <- fread("D:/Thesis/Data/COMPLETE/mpa_age.csv") %>% mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
+mpa <- fread("D:/Thesis/Data/mpa_cleaned.csv") %>% mutate(settlementdate = ymd_hms(settlementdate))
 
 #MONTH/Fuel Type
 mpa_month_fuel <- mpa %>% 
-    group_by(MONTH = floor_date(SETTLEMENTDATE, "month"), Fuel.Type) %>% 
+    group_by(month = floor_date(settlementdate, "month"), fuel_type) %>% 
     summ_all() %>% 
-    pad(group = c("Fuel.Type")) %>% replace(is.na(.), 0)#add missing rows of 0
+    pad(group = c("fuel_type")) %>% replace(is.na(.), 0)#add missing rows of 0
 
 #MONTH/Fuel Type + STATE
 mpa_month_fuel_region <- mpa %>% 
-    group_by(MONTH = floor_date(SETTLEMENTDATE, "month"), Fuel.Type, REGIONID) %>% 
+    group_by(month = floor_date(settlementdate, "month"), fuel_type, regionid) %>% 
     summ_all() %>% 
-    pad(group = c("REGIONID", "Fuel.Type")) %>% replace(is.na(.), 0)#add missing rows of 0
+    pad(group = c("REGIONID", "fuel_type")) %>% replace(is.na(.), 0)#add missing rows of 0
 
 #YEAR/Fuel Type
-mpa_year_fuel <- mpa %>% group_by(YEAR = floor_date(SETTLEMENTDATE, "year"), Fuel.Type) %>% 
+mpa_year_fuel <- mpa %>% group_by(YEAR = floor_date(settlementdate, "year"), fuel_type) %>% 
     summ_all() %>% 
-    pad(group = c("Fuel.Type")) %>% replace(is.na(.), 0)#add missing rows of 0
+    pad(group = c("fuel_type")) %>% replace(is.na(.), 0)#add missing rows of 0
 
 
 #YEAR/Fuel Type + STATE
-mpa_year_fuel_state <- mpa %>% group_by(YEAR = floor_date(SETTLEMENTDATE, "year"), Fuel.Type, REGIONID) %>% 
+mpa_year_fuel_state <- mpa %>% group_by(YEAR = floor_date(settlementdate, "year"), fuel_type, REGIONID) %>% 
     summ_all() %>% 
-    pad(group = c("REGIONID", "Fuel.Type")) %>% replace(is.na(.), 0)#add missing rows of 0
+    pad(group = c("REGIONID", "fuel_type")) %>% replace(is.na(.), 0)#add missing rows of 0
 
 
 ### GRAPHS
@@ -66,7 +66,7 @@ mpa_year_fuel_state <- mpa %>% group_by(YEAR = floor_date(SETTLEMENTDATE, "year"
 
 #Dif_Total MONTH, FUEL/STATE
 mpa_month_fuel_region %>% 
-    ggplot(aes(x = MONTH, y = Dif_Total, colour = Fuel.Type)) +
+    ggplot(aes(x = MONTH, y = Dif_Total, colour = fuel_type)) +
     geom_line(size = 2) +
     facet_wrap(~ REGIONID) +
     ggtitle("Revenue Change in swith to LMP - Grouped by Fuel Type and State")+
@@ -75,7 +75,7 @@ mpa_month_fuel_region %>%
 
 #Dif_Total_0 MONTH FUEL/STATE
 mpa_month_fuel_region %>% 
-    ggplot(aes(x = MONTH, y = Dif_Total_0, colour = Fuel.Type)) +
+    ggplot(aes(x = MONTH, y = Dif_Total_0, colour = fuel_type)) +
     geom_line(size = 2) +
     facet_wrap(~ REGIONID) +
     ggtitle("Revenue Change in swith to LMP - Assume LMP cannot be Neg")+
@@ -84,7 +84,7 @@ mpa_month_fuel_region %>%
 
 #Dif_Total MONTH, FUEL/STATE
 mpa_month_fuel_region %>% 
-    ggplot(aes(x = MONTH, y = Dif_Total, colour = Fuel.Type)) +
+    ggplot(aes(x = MONTH, y = Dif_Total, colour = fuel_type)) +
     geom_line(size = 2) +
     facet_wrap(~ REGIONID) +
     ggtitle("Revenue Change in swith to LMP - Grouped by Fuel Type and State")+
@@ -93,7 +93,7 @@ mpa_month_fuel_region %>%
 
 #Dif_Total YEAR FUEL
 mpa_year_fuel %>% 
-    ggplot(aes(x = YEAR, y = Dif_Total, colour = Fuel.Type)) +
+    ggplot(aes(x = YEAR, y = Dif_Total, colour = fuel_type)) +
     geom_line(size = 2) +
     ggtitle("Revenue Change in swith to LMP - Assume LMP cannot be Neg")+
     xlab("") +
@@ -101,7 +101,7 @@ mpa_year_fuel %>%
 
 #Dif_Total_0 YEAR FUEL
 mpa_year_fuel %>% 
-    ggplot(aes(x = YEAR, y = Dif_Total_0, colour = Fuel.Type)) +
+    ggplot(aes(x = YEAR, y = Dif_Total_0, colour = fuel_type)) +
     geom_line(size = 2) +
     ggtitle("Revenue Change in swith to LMP - Assume LMP cannot be Neg")+
     xlab("") +
@@ -110,25 +110,25 @@ mpa_year_fuel %>%
 
 #Dif_Ave YEAR FUEL
 mpa_year_fuel %>% 
-    ggplot(aes(x = YEAR, y = Dif_Ave, group = Fuel.Type, colour = Fuel.Type)) + 
+    ggplot(aes(x = YEAR, y = Dif_Ave, group = fuel_type, colour = fuel_type)) + 
     geom_line(size = 2)+
     ggtitle("Average Revenue Increase in switch to LMP") 
 
 #without liquid fuel (outlier)
-mpa_year_fuel %>% filter(Fuel.Type != "Liquid Fuel") %>% 
-    ggplot(aes(x = YEAR, y = Dif_Ave_0, group = Fuel.Type, colour = Fuel.Type)) + 
+mpa_year_fuel %>% filter(fuel_type != "Liquid Fuel") %>% 
+    ggplot(aes(x = YEAR, y = dif_ave_0, group = fuel_type, colour = fuel_type)) + 
     geom_line(size = 2)+
     ggtitle("Average Revenue Increase in switch to LMP - No Liquid Fuel")
 
-#Dif_Ave_0
+#dif_ave_0
 mpa_year_fuel %>% 
-    ggplot(aes(x = YEAR, y = Dif_Ave_0, group = Fuel.Type, colour = Fuel.Type)) + 
+    ggplot(aes(x = YEAR, y = dif_ave_0, group = fuel_type, colour = fuel_type)) + 
     geom_line(size = 2)+
     ggtitle("Average Revenue Increase in swicth to LMP0 (No neg LMP)")
 
 #without liquid fuel (outlier)
-mpa_year_fuel %>% filter(Fuel.Type != "Liquid Fuel") %>% 
-    ggplot(aes(x = YEAR, y = Dif_Ave_0, group = Fuel.Type, colour = Fuel.Type)) + 
+mpa_year_fuel %>% filter(fuel_type != "Liquid Fuel") %>% 
+    ggplot(aes(x = YEAR, y = dif_ave_0, group = fuel_type, colour = fuel_type)) + 
     geom_line(size = 2)+
     ggtitle("Average Revenue Increase in switch to LMP0 (No neg LMP) - No Liquid Fuel")
 
