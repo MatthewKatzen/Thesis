@@ -44,10 +44,10 @@ mpa_month_fuel <- mpa %>%
     pad(group = c("fuel_type")) %>% replace(is.na(.), 0)#add missing rows of 0
 
 #MONTH/Fuel Type + STATE
-mpa_month_fuel_region <- mpa %>% 
+mpa_month_fuel_region <- mpa %>%
     group_by(month = floor_date(settlementdate, "month"), fuel_type, regionid) %>% 
     summ_all() %>% 
-    pad(group = c("REGIONID", "fuel_type")) %>% replace(is.na(.), 0)#add missing rows of 0
+    pad(group = c("regionid", "fuel_type")) %>% replace(is.na(.), 0)#add missing rows of 0
 
 #YEAR/Fuel Type
 mpa_year_fuel <- mpa %>% group_by(YEAR = floor_date(settlementdate, "year"), fuel_type) %>% 
@@ -56,9 +56,9 @@ mpa_year_fuel <- mpa %>% group_by(YEAR = floor_date(settlementdate, "year"), fue
 
 
 #YEAR/Fuel Type + STATE
-mpa_year_fuel_state <- mpa %>% group_by(YEAR = floor_date(settlementdate, "year"), fuel_type, REGIONID) %>% 
+mpa_year_fuel_state <- mpa %>% group_by(YEAR = floor_date(settlementdate, "year"), fuel_type, regionid) %>% 
     summ_all() %>% 
-    pad(group = c("REGIONID", "fuel_type")) %>% replace(is.na(.), 0)#add missing rows of 0
+    pad(group = c("regionid", "fuel_type")) %>% replace(is.na(.), 0)#add missing rows of 0
 
 
 ### GRAPHS
@@ -66,9 +66,9 @@ mpa_year_fuel_state <- mpa %>% group_by(YEAR = floor_date(settlementdate, "year"
 
 #Dif_Total MONTH, FUEL/STATE
 mpa_month_fuel_region %>% 
-    ggplot(aes(x = MONTH, y = Dif_Total, colour = fuel_type)) +
+    ggplot(aes(x = month, y = dif_total, colour = fuel_type)) +
     geom_line(size = 2) +
-    facet_wrap(~ REGIONID) +
+    facet_wrap(~ regionid) +
     ggtitle("Revenue Change in swith to LMP - Grouped by Fuel Type and State")+
     xlab("") +
     ylab("Rev Change")
