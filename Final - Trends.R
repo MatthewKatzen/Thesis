@@ -59,13 +59,19 @@ mpa_year_fuel %>% filter(fuel_type != "Liquid Fuel") %>%
 ### WIND AGE
 
 mpa_year_fuel_age <- mpa %>% 
-    group_by(year = floor_date(settlementdate, "quarter"), fuel_type, age) %>% 
+    group_by(year = floor_date(settlementdate, "year"), fuel_type, age) %>% 
     summ_all()
-
 
 mpa_year_fuel_age %>% filter(fuel_type == "Wind") %>% 
     filter(year > ymd_hms("2013-01-01 00:00:00")) %>% 
     ggplot(aes(x = year, y = dif_ave, group = age, colour = age)) + 
+    geom_line(size = 2) +
+    scale_color_gradient(low = "blue", high = "red") +
+    facet_wrap(~ fuel_type)
+
+mpa_year_fuel_age %>% filter(fuel_type == "Wind") %>% 
+    filter(year > ymd_hms("2013-01-01 00:00:00")) %>% 
+    ggplot(aes(x = year, y = dif_ave_0, group = age, colour = age)) + 
     geom_line(size = 2) +
     scale_color_gradient(low = "blue", high = "red") +
     facet_wrap(~ fuel_type)
