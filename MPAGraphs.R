@@ -37,98 +37,92 @@ summ_all <- function(df){
 
 mpa <- fread("D:/Thesis/Data/mpa_cleaned.csv") %>% mutate(settlementdate = ymd_hms(settlementdate))
 
-#MONTH/Fuel Type
+#month/Fuel Type
 mpa_month_fuel <- mpa %>% 
     group_by(month = floor_date(settlementdate, "month"), fuel_type) %>% 
     summ_all() %>% 
     pad(group = c("fuel_type")) %>% replace(is.na(.), 0)#add missing rows of 0
 
-#MONTH/Fuel Type + STATE
+#month/Fuel Type + STATE
 mpa_month_fuel_region <- mpa %>%
-    group_by(month = floor_date(settlementdate, "month"), fuel_type, regionid) %>% 
+    group_by(month = floor_date(settlementdate, "month"), fuel_type, state) %>% 
     summ_all() %>% 
-    pad(group = c("regionid", "fuel_type")) %>% replace(is.na(.), 0)#add missing rows of 0
+    pad(group = c("state", "fuel_type")) %>% replace(is.na(.), 0)#add missing rows of 0
 
-#YEAR/Fuel Type
-mpa_year_fuel <- mpa %>% group_by(YEAR = floor_date(settlementdate, "year"), fuel_type) %>% 
+#year/Fuel Type
+mpa_year_fuel <- mpa %>% group_by(year = floor_date(settlementdate, "year"), fuel_type) %>% 
     summ_all() %>% 
     pad(group = c("fuel_type")) %>% replace(is.na(.), 0)#add missing rows of 0
 
 
-#YEAR/Fuel Type + STATE
-mpa_year_fuel_state <- mpa %>% group_by(YEAR = floor_date(settlementdate, "year"), fuel_type, regionid) %>% 
+#year/Fuel Type + STATE
+mpa_year_fuel_state <- mpa %>% group_by(year = floor_date(settlementdate, "year"), fuel_type, state) %>% 
     summ_all() %>% 
-    pad(group = c("regionid", "fuel_type")) %>% replace(is.na(.), 0)#add missing rows of 0
+    pad(group = c("state", "fuel_type")) %>% replace(is.na(.), 0)#add missing rows of 0
 
 
 ### GRAPHS
 
 
-#Dif_Total MONTH, FUEL/STATE
+#dif_total month, FUEL/STATE
 mpa_month_fuel_region %>% 
     ggplot(aes(x = month, y = dif_total, colour = fuel_type)) +
     geom_line(size = 2) +
-    facet_wrap(~ regionid) +
-    ggtitle("Revenue Change in swith to LMP - Grouped by Fuel Type and State")+
+    facet_wrap(~ state) +
+    ggtitle("Total Revenue Change in swith to LMP - Grouped by Fuel Type and State")+
     xlab("") +
     ylab("Rev Change")
 
-#Dif_Total_0 MONTH FUEL/STATE
+#dif_total_0 month FUEL/STATE
 mpa_month_fuel_region %>% 
-    ggplot(aes(x = MONTH, y = Dif_Total_0, colour = fuel_type)) +
+    ggplot(aes(x = month, y = dif_total_0, colour = fuel_type)) +
     geom_line(size = 2) +
-    facet_wrap(~ REGIONID) +
-    ggtitle("Revenue Change in swith to LMP - Assume LMP cannot be Neg")+
+    facet_wrap(~ state) +
+    ggtitle("Total Revenue Change in swith to LMP - Assume LMP cannot be Neg")+
     xlab("") +
     ylab("Rev Change")
 
-#Dif_Total MONTH, FUEL/STATE
-mpa_month_fuel_region %>% 
-    ggplot(aes(x = MONTH, y = Dif_Total, colour = fuel_type)) +
-    geom_line(size = 2) +
-    facet_wrap(~ REGIONID) +
-    ggtitle("Revenue Change in swith to LMP - Grouped by Fuel Type and State")+
-    xlab("") +
-    ylab("Rev Change")
-
-#Dif_Total YEAR FUEL
+#dif_total year FUEL
 mpa_year_fuel %>% 
-    ggplot(aes(x = YEAR, y = Dif_Total, colour = fuel_type)) +
+    ggplot(aes(x = year, y = dif_total, colour = fuel_type)) +
     geom_line(size = 2) +
-    ggtitle("Revenue Change in swith to LMP - Assume LMP cannot be Neg")+
+    ggtitle("Total Revenue Change in swith to LMP - Assume LMP cannot be Neg")+
     xlab("") +
     ylab("Rev Change")
 
-#Dif_Total_0 YEAR FUEL
+#dif_total_0 year FUEL
 mpa_year_fuel %>% 
-    ggplot(aes(x = YEAR, y = Dif_Total_0, colour = fuel_type)) +
+    ggplot(aes(x = year, y = dif_total_0, colour = fuel_type)) +
     geom_line(size = 2) +
     ggtitle("Revenue Change in swith to LMP - Assume LMP cannot be Neg")+
     xlab("") +
     ylab("Rev Change")
 
 
-#Dif_Ave YEAR FUEL
+
+
+
+#Dif_Ave year FUEL
 mpa_year_fuel %>% 
-    ggplot(aes(x = YEAR, y = Dif_Ave, group = fuel_type, colour = fuel_type)) + 
+    ggplot(aes(x = year, y = dif_ave, group = fuel_type, colour = fuel_type)) + 
     geom_line(size = 2)+
     ggtitle("Average Revenue Increase in switch to LMP") 
 
 #without liquid fuel (outlier)
 mpa_year_fuel %>% filter(fuel_type != "Liquid Fuel") %>% 
-    ggplot(aes(x = YEAR, y = dif_ave_0, group = fuel_type, colour = fuel_type)) + 
+    ggplot(aes(x = year, y = dif_ave, group = fuel_type, colour = fuel_type)) + 
     geom_line(size = 2)+
     ggtitle("Average Revenue Increase in switch to LMP - No Liquid Fuel")
 
 #dif_ave_0
 mpa_year_fuel %>% 
-    ggplot(aes(x = YEAR, y = dif_ave_0, group = fuel_type, colour = fuel_type)) + 
+    ggplot(aes(x = year, y = dif_ave_0, group = fuel_type, colour = fuel_type)) + 
     geom_line(size = 2)+
     ggtitle("Average Revenue Increase in swicth to LMP0 (No neg LMP)")
 
 #without liquid fuel (outlier)
 mpa_year_fuel %>% filter(fuel_type != "Liquid Fuel") %>% 
-    ggplot(aes(x = YEAR, y = dif_ave_0, group = fuel_type, colour = fuel_type)) + 
+    ggplot(aes(x = year, y = dif_ave_0, group = fuel_type, colour = fuel_type)) + 
     geom_line(size = 2)+
     ggtitle("Average Revenue Increase in switch to LMP0 (No neg LMP) - No Liquid Fuel")
 

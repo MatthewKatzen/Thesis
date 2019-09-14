@@ -134,6 +134,14 @@ mpa_rev <- fread("D:/Thesis/Data/COMPLETE/mpa_unique.csv") %>%
     mutate(Rev_LMP0 = pmax(LMP, 0)*TOTALCLEARED) %>% 
     mutate(Rev_DIF = Rev_LMP - Rev_RRP_30) %>%   #how much you benefit from change to LMP system
     mutate(Rev_DIF_0 = pmax(Rev_LMP, Rev_LMP0) - Rev_RRP_30) %>%  #assume no neg LMP (no neg bids)
+    mutate(STATE = case_when(REGIONID == "QLD1" ~ "QLD",
+                             REGIONID == "NSW1" ~ "NSW",
+                             REGIONID == "VIC1" ~ "VIC",
+                             REGIONID == "SA1" ~ "SA",
+                             REGIONID == "TAS1" ~ "TAS")) %>% 
+    select(-REGIONID) %>% 
     clean_names()#clean up colnames
+
+
 
 fwrite(mpa_rev, "D:/Thesis/Data/mpa_cleaned.csv")

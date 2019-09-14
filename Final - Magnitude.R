@@ -44,23 +44,23 @@ summ_all <- function(df){
 # Congestion
 congested <- mpa %>% select(settlementdate) %>% unique() %>% mutate(constrained = 1) %>% 
     pad(interval = "5 min", break_above = 2000000, start_val = ymd_hms("2009-07-01 00:05:00"), 
-        end_val = "2019-07-01 00:00:00") %>% replace(is.na(.), 0)#add 0 if not congested
+        end_val = ymd_hms("2019-07-01 00:00:00")) %>% replace(is.na(.), 0)#add 0 if not congested
 
 #by year table
 congested %>% group_by(year = floor_date(settlementdate, "year")) %>% 
     summarise(perc = sum(constrained)/n()) %>% fwrite("Output/congestion by year.csv")
 
 #graph by month, grouped by state
-congested_state <- mpa %>% select(settlementdate, regionid) %>% unique() %>% mutate(constrained = 1) %>% 
+congested_state <- mpa %>% select(settlementdate, state) %>% unique() %>% mutate(constrained = 1) %>% 
     pad(interval = "5 min", start_val = ymd_hms("2009-07-01 00:05:00"), 
-        end_val = ymd_hms("2019-07-01 00:00:00"), break_above = 10000000, group = "regionid") %>% 
+        end_val = ymd_hms("2019-07-01 00:00:00"), break_above = 10000000, group = "state") %>% 
     replace(is.na(.), 0)#add 0 if not congested
 
-congested_state %>% group_by(year = floor_date(settlementdate, "year"), regionid) %>% 
+congested_state %>% group_by(year = floor_date(settlementdate, "year"), state) %>% 
     summarise(perc = sum(constrained)/n()) %>% 
-    ggplot(aes(x = year, y = perc, colour = regionid, group = regionid))+
+    ggplot(aes(x = year, y = perc, colour = state, group = state))+
     geom_line(size = 2)+
-    facet_wrap(~regionid) +
+    facet_wrap(~state) +
     labs(title = "Proportion of time state is congested", y = "Proportion", x = "Year")+
     ylim(0,0.5) +
     ggsave("Output/Congested_state.png")

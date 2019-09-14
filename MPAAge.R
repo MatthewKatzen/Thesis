@@ -37,7 +37,7 @@ mpa %>% filter(fuel_type == "Wind") %>%
 
 #by YEAR, Grouped FUEL/age
 mpa_year_fuel_age <- mpa %>% 
-    group_by(year = floor_date(settlementdate, "year"), fuel_type, age) %>% 
+    group_by(year = floor_date(settlementdate, "quarter"), fuel_type, age) %>% 
     summ_all()
 
 
