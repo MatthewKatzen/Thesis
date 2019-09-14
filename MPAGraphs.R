@@ -11,7 +11,7 @@ library(padr)
 
 #add all sumarised cols of interest
 #input: grouped df
-#output: agregate summires
+#output: agregate summares
 summ_all <- function(df){
     df %>% 
         summarise(quantity = sum(totalcleared),
