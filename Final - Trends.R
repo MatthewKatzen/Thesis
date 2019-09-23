@@ -15,7 +15,8 @@ mpa_month_fuel_region %>%
     facet_wrap(~ state) +
     ggtitle("Total Revenue Change in swith to LMP - Grouped by Fuel Type and State")+
     xlab("") +
-    ylab("Rev Change")
+    ylab("Rev Change") %>% 
+    ggsave("Output/Charts/Total Rev LMP.png")
 
 #dif_total_0 month FUEL/STATE
 mpa_month_fuel_region %>% 

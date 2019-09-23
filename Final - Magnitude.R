@@ -2,7 +2,7 @@
 # Is congestion an issue?
 # How often is the network congested?
 # What states?
-# Wat gens were most congested?
+# What gens were most congested?
 
 library(tidyverse)
 library(tidyr)
@@ -46,7 +46,7 @@ congested <- mpa %>% select(settlementdate) %>% unique() %>% mutate(constrained 
     pad(interval = "5 min", break_above = 2000000, start_val = ymd_hms("2009-07-01 00:05:00"), 
         end_val = ymd_hms("2019-07-01 00:00:00")) %>% replace(is.na(.), 0)#add 0 if not congested
 
-#by year table
+#what proportion of the time is the network congested (by year)
 congested %>% group_by(year = floor_date(settlementdate, "year")) %>% 
     summarise(perc = sum(constrained)/n()) %>% fwrite("Output/congestion by year.csv")
 
@@ -62,7 +62,43 @@ congested_state %>% group_by(year = floor_date(settlementdate, "year"), state) %
     geom_line(size = 2)+
     facet_wrap(~state) +
     labs(title = "Proportion of time state is congested", y = "Proportion", x = "Year")+
-    ylim(0,0.5) +
-    ggsave("Output/Congested_state.png")
+    ylim(0,0.5) + 
+    theme(legend.position = "none") +
+    ggsave("Output/Congested_state.png", width = 10)
 
+#most congested generators
+congested_duid <-  mpa %>% filter(year(settlementdate) == 2018, (lmp < rrp30)) %>% 
+    select(settlementdate, duid, totalcleared, station, fuel_type) %>% 
+    group_by(duid) %>% summarise(count = n(), station = station[1], fuel_type = fuel_type[1]) %>% 
+    arrange(-count) %>% mutate(perc = count/(12*24*365))
+
+#most congested generators removing intervals where didn't produce
+congested_duid_2 <-  mpa %>% filter(year(settlementdate) == 2018, (lmp < rrp30), totalcleared > 0) %>% 
+    select(settlementdate, duid, totalcleared, station, fuel_type) %>% 
+    group_by(duid) %>% summarise(count = n(), station = station[1], fuel_type = fuel_type[1]) %>% 
+    arrange(-count) %>% mutate(perc = count/(12*24*365)) 
+
+congested_duid_2 %>% .[1:10,] %>% fwrite("Output/congestion by duid top 10.csv")
+
+
+#congestion by generator type
+#at any point in time, what is the chance that at least 1 generator of that fuel type is congested
+congested_fuel <- mpa %>%  
+    filter(lmp < rrp30, totalcleared > 0) %>% #constrained off and producing
+    select(settlementdate, fuel_type) %>% 
+    unique() %>% mutate(constrained = 1) %>% 
+    pad(interval = "5 min", start_val = ymd_hms("2009-07-01 00:05:00"), 
+        end_val = ymd_hms("2019-07-01 00:00:00"), break_above = 10000000, group = "fuel_type") %>% 
+    replace(is.na(.), 0) %>% #add 0 if not congested
+    group_by(year = floor_date(settlementdate, "year"), fuel_type) %>% 
+    summarise(perc = sum(constrained)/n()) 
     
+
+congested_fuel %>% 
+    ggplot(aes(x = year, y = perc, colour = fuel_type, group = fuel_type))+
+    geom_line(size = 1.5)+
+    facet_wrap(~fuel_type) +
+    labs(title = "Proportion of time at least one generator is constrained off", y = "Proportion", x = "Year")+
+    ylim(0,0.5) + 
+    theme(legend.position = "none") +
+    ggsave("Output/Charts/Congested_fuel.png", width = 10)
