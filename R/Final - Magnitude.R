@@ -68,17 +68,19 @@ congested_state %>% group_by(year = floor_date(settlementdate, "year"), state) %
 
 #most congested generators
 congested_duid <-  mpa %>% filter(year(settlementdate) == 2018, (lmp < rrp30)) %>% 
-    select(settlementdate, duid, totalcleared, station, fuel_type) %>% 
-    group_by(duid) %>% summarise(count = n(), station = station[1], fuel_type = fuel_type[1]) %>% 
+    select(settlementdate, station, fuel_type) %>%
+    unique() %>% 
+    group_by(station) %>% summarise(count = n(), fuel_type = fuel_type[1]) %>% 
     arrange(-count) %>% mutate(perc = count/(12*24*365))
+congested_duid %>% .[1:10,] %>% fwrite("Output/congestion by duid top 10 - assump no output included.csv")
 
-#most congested generators removing intervals where didn't produce
+#most congested generators removing intervals where didn't produce 
 congested_duid_2 <-  mpa %>% filter(year(settlementdate) == 2018, (lmp < rrp30), totalcleared > 0) %>% 
     select(settlementdate, duid, totalcleared, station, fuel_type) %>% 
     group_by(duid) %>% summarise(count = n(), station = station[1], fuel_type = fuel_type[1]) %>% 
     arrange(-count) %>% mutate(perc = count/(12*24*365)) 
 
-congested_duid_2 %>% .[1:10,] %>% fwrite("Output/congestion by duid top 10.csv")
+congested_duid_2 %>% .[1:10,] %>% fwrite("Output/congestion by duid top 10.csv")#this is flawed use c_duid above instead as would need each period totalcleared to make statetment
 
 
 #congestion by generator type
