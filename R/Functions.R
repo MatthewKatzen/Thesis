@@ -246,9 +246,9 @@ dispatch.fun <- function(yearmonth){
               exdir = external.data.location)
     }
     dispatch <- fread(csv.name, sep=",", skip=1, stringsAsFactors = FALSE)
-    dispatch <- dispatch %>% 
-        filter(INTERVENTION == 0) %>% 
-        select(DUID, SETTLEMENTDATE, TOTALCLEARED) %>% 
+    dispatch <- dispatch %>%
+        filter(INTERVENTION == 0) %>%
+        select(DUID, SETTLEMENTDATE, INITIALMW) %>%
         mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
     if(url != 0){
         unlink(temp) #delete zip

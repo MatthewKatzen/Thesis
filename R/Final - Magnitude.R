@@ -3,7 +3,7 @@
 # How often is the network congested?
 # What states?
 # What gens were most congested?
-
+setwd("C:/Users/Matthew/Google Drive/Uni/19/Thesis/Analysis/Dissordely Bidding")
 library(tidyverse)
 library(tidyr)
 library(lubridate)
@@ -12,59 +12,73 @@ library(padr)
 
 ### Get DATA
 
-mpa <- fread("D:/Thesis/Data/mpa_cleaned.csv") %>% mutate(settlementdate = ymd_hms(settlementdate))
+mpa <- fread("D:/Thesis/Data/mpa_cleaned_initial.csv") %>% 
+    mutate(settlementdate = ymd_hms(settlementdate))
 
 #add all sumarised cols of interest
 #input: grouped df
 #output: agregate summares
 summ_all <- function(df){
     df %>% 
-        summarise(quantity = sum(totalcleared),
-                  ave_rev = ifelse(sum(totalcleared)>0,
-                                   sum(rev_rrp_30)/sum(totalcleared),
+        summarise(quantity = sum(dispatchmwh),#convert MW into MWh
+                  ave_rev = ifelse(sum(dispatchmwh)>0,
+                                   sum(rev_rrp_30)/sum(dispatchmwh),
                                    NA),
-                  ave_rev_lmp = ifelse(sum(totalcleared)>0,
-                                       sum(rev_lmp)/sum(totalcleared),
+                  ave_rev_lmp = ifelse(sum(dispatchmwh)>0,
+                                       sum(rev_lmp)/sum(dispatchmwh),
                                        NA),
-                  ave_rev_lmp0 = ifelse(sum(totalcleared)>0,
-                                        sum(rev_lmp0)/sum(totalcleared),
+                  ave_rev_lmp0 = ifelse(sum(dispatchmwh)>0,
+                                        sum(rev_lmp0)/sum(dispatchmwh),
                                         NA),
                   total_rev_rrp = sum(rev_rrp_30),
                   total_rev_lmp = sum(rev_lmp),
                   total_rev_lmp0 = sum(rev_lmp0),
-                  dif_ave = ave_rev_lmp - ave_rev,
-                  dif_ave_0 = ave_rev_lmp0 - ave_rev,
-                  dif_total = total_rev_lmp - total_rev_rrp,
-                  dif_total_0 = total_rev_lmp0 - total_rev_rrp)
+                  dif_ave =  ave_rev - ave_rev_lmp,
+                  dif_ave_0 = ave_rev - ave_rev_lmp0,
+                  dif_total = total_rev_rrp - total_rev_lmp,
+                  dif_total_0 = total_rev_rrp - total_rev_lmp0)
 }
 
 
 ### MAGNITUDE
 
 # Congestion
-congested <- mpa %>% select(settlementdate) %>% unique() %>% mutate(constrained = 1) %>% 
-    pad(interval = "5 min", break_above = 2000000, start_val = ymd_hms("2009-07-01 00:05:00"), 
-        end_val = ymd_hms("2019-07-01 00:00:00")) %>% replace(is.na(.), 0)#add 0 if not congested
+congested <- mpa %>% select(settlementdate) %>% filter(year(settlementdate)<2019, year(settlementdate)>2009) %>%#full years 
+    unique() %>% mutate(constrained = 1) %>% 
+    pad(interval = "5 min", break_above = 2000000, start_val = ymd_hms("2010-01-01 00:05:00"), 
+        end_val = ymd_hms("2019-01-01 00:00:00")) %>% replace(is.na(.), 0)#add 0 if not congested
 
 #what proportion of the time is the network congested (by year)
 congested %>% group_by(year = floor_date(settlementdate, "year")) %>% 
     summarise(perc = sum(constrained)/n()) %>% fwrite("Output/congestion by year.csv")
 
+congested %>% group_by(year = floor_date(settlementdate, "year")) %>% 
+    summarise(perc = sum(constrained)/n()) %>% .[1:9,] %>% 
+    ggplot(aes(x = year, y = perc))+
+    geom_line(size = 2) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0,1)) +
+    labs(title = "Percentage of Time NEM is Congested", y = "Percent", x = "Year") +
+    ggsave("output/Charts/Perc Congested NEM.png", width = 10)
+    
+    
+
+
 #graph by month, grouped by state
-congested_state <- mpa %>% select(settlementdate, state) %>% unique() %>% mutate(constrained = 1) %>% 
-    pad(interval = "5 min", start_val = ymd_hms("2009-07-01 00:05:00"), 
-        end_val = ymd_hms("2019-07-01 00:00:00"), break_above = 10000000, group = "state") %>% 
+congested_state <- mpa %>% select(settlementdate, state) %>% filter(year(settlementdate)<2019, year(settlementdate)>2009) %>% 
+    unique() %>% mutate(constrained = 1) %>% 
+    pad(interval = "5 min", start_val = ymd_hms("2010-01-01 00:05:00"), 
+        end_val = ymd_hms("2019-01-01 00:00:00"), break_above = 10000000, group = "state") %>% 
     replace(is.na(.), 0)#add 0 if not congested
 
 congested_state %>% group_by(year = floor_date(settlementdate, "year"), state) %>% 
-    summarise(perc = sum(constrained)/n()) %>% 
+    summarise(perc = sum(constrained)/n()) %>% .[1:45,] %>%  
     ggplot(aes(x = year, y = perc, colour = state, group = state))+
     geom_line(size = 2)+
     facet_wrap(~state) +
-    labs(title = "Proportion of time state is congested", y = "Proportion", x = "Year")+
-    ylim(0,0.5) + 
+    labs(title = "Percentage of Time State is Congested", y = "Percent", x = "Year")+
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0,0.5)) +
     theme(legend.position = "none") +
-    ggsave("Output/Congested_state.png", width = 10)
+    ggsave("Output/Charts/Congested_state.png", width = 10)
 
 #most congested generators
 congested_duid <-  mpa %>% filter(year(settlementdate) == 2018, (lmp < rrp30)) %>% 
@@ -75,32 +89,33 @@ congested_duid <-  mpa %>% filter(year(settlementdate) == 2018, (lmp < rrp30)) %
 congested_duid %>% .[1:10,] %>% fwrite("Output/congestion by duid top 10 - assump no output included.csv")
 
 #most congested generators removing intervals where didn't produce 
-congested_duid_2 <-  mpa %>% filter(year(settlementdate) == 2018, (lmp < rrp30), totalcleared > 0) %>% 
-    select(settlementdate, duid, totalcleared, station, fuel_type) %>% 
+congested_duid_2 <-  mpa %>% filter(year(settlementdate) == 2018, (lmp < rrp30), dispatchmwh > 0) %>% 
+    select(settlementdate, duid, dispatchmwh, station, fuel_type) %>% 
     group_by(duid) %>% summarise(count = n(), station = station[1], fuel_type = fuel_type[1]) %>% 
     arrange(-count) %>% mutate(perc = count/(12*24*365)) 
 
-congested_duid_2 %>% .[1:10,] %>% fwrite("Output/congestion by duid top 10.csv")#this is flawed use c_duid above instead as would need each period totalcleared to make statetment
+congested_duid_2 %>% .[1:10,] %>% fwrite("Output/congestion by duid top 10.csv")#this is flawed use c_duid above instead as would need each period dispatchmwh to make statetment
 
 
 #congestion by generator type
-#at any point in time, what is the chance that at least 1 generator of that fuel type is congested
-congested_fuel <- mpa %>%  
-    filter(lmp < rrp30, totalcleared > 0) %>% #constrained off and producing
+#at any point in time, what is the percentage of generators who are constrained off by fuel type
+congested_fuel <- mpa %>%  filter(settlementdate < ymd_hms("2019-01-01 00:05:00 UTC"), 
+                                  settlementdate > ymd_hms("2010-01-01 00:00:00 UTC")) %>% 
+    filter(lmp < rrp, dispatchmwh > 0) %>% #constrained off and producing
     select(settlementdate, fuel_type) %>% 
     unique() %>% mutate(constrained = 1) %>% 
-    pad(interval = "5 min", start_val = ymd_hms("2009-07-01 00:05:00"), 
-        end_val = ymd_hms("2019-07-01 00:00:00"), break_above = 10000000, group = "fuel_type") %>% 
+    pad(interval = "5 min", start_val = ymd_hms("2010-01-01 00:05:00"), 
+        end_val = ymd_hms("2019-01-01 00:00:00"), break_above = 10000000, group = "fuel_type") %>% 
     replace(is.na(.), 0) %>% #add 0 if not congested
     group_by(year = floor_date(settlementdate, "year"), fuel_type) %>% 
     summarise(perc = sum(constrained)/n()) 
     
 
-congested_fuel %>% 
+congested_fuel %>% filter(year(year) < 2019) %>% filter(!(fuel_type %in% c("Battery", "Liquid Fuel"))) %>% 
     ggplot(aes(x = year, y = perc, colour = fuel_type, group = fuel_type))+
     geom_line(size = 1.5)+
     facet_wrap(~fuel_type) +
-    labs(title = "Proportion of time at least one generator is constrained off", y = "Proportion", x = "Year")+
-    ylim(0,0.5) + 
+    labs(title = "Percentage of Time of Time at least one of the generator type is constrained on/off", y = "Percent", x = "Year")+
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0,0.5)) +
     theme(legend.position = "none") +
     ggsave("Output/Charts/Congested_fuel.png", width = 10)

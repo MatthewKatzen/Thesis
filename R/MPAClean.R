@@ -53,7 +53,7 @@ for (i in year){
     } else{
         temp <- paste0(i, months)
     }
-    file_location <- paste0("D:/Thesis/Data/DISPATCH/yearly/dispatch", i, ".csv")
+    file_location <- paste0("D:/Thesis/Data/DISPATCH/yearly/dispatch_initial_", i, ".csv")
     dispatchtemp <- temp %>% map(~ dispatch.fun(.x)) %>% 
         rbindlist()  
     fwrite(dispatchtemp, file_location)
@@ -102,36 +102,36 @@ fwrite(mpa_nodisp, "D:/Thesis/Data/mpa_nodisp.csv")
 
 #loop through years to add dispatch
 for (i in year){
-    temp <- mpa_nodisp %>% 
-        inner_join(fread(paste0("D:/Thesis/Data/DISPATCH/yearly/dispatch", i, ".csv"),
-                         stringsAsFactors = FALSE) %>%
-                       mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE)),
+    temp <- fread("D:/Thesis/Data/mpa_nodisp.csv") %>% 
+        inner_join(fread(paste0("D:/Thesis/Data/DISPATCH/yearly/dispatch_initial_", i, ".csv"),
+                         stringsAsFactors = FALSE),
                    by = c("DUID", "SETTLEMENTDATE")) #dispatch
     
-    fwrite(temp, paste0("D:/Thesis/Data/COMPLETE/mpa", i, ".csv"))
+    fwrite(temp, paste0("D:/Thesis/Data/COMPLETE/initial/mpa_initial", i, ".csv"))
 }
 
 
-data_location <- "D:/Thesis/Data/COMPLETE"
+data_location <- "D:/Thesis/Data/COMPLETE/initial"
 files <- paste0(data_location, "/", list.files(data_location))
 
 mpa_complete <- files %>% map(~ fread(.x, stringsAsFactors = FALSE)) %>% 
     rbindlist() %>% mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE)) 
 
-fwrite(mpa_complete, "D:/Thesis/Data/COMPLETE/mpamerged.csv")
+fwrite(mpa_complete, "D:/Thesis/Data/COMPLETE/initial/mpamerged.csv")
 
 #remove repeat mpa
-mpa <- fread("D:/Thesis/Data/COMPLETE/mpamerged.csv") %>% mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
+mpa <- fread("D:/Thesis/Data/COMPLETE/initial/mpamerged.csv") 
 mpa_dup <- mpa %>% select(SETTLEMENTDATE, DUID) %>% duplicated()
 mpa_unique <- mpa[!mpa_dup,]
 
-fwrite(mpa_unique, "D:/Thesis/Data/COMPLETE/mpa_unique.csv")
+fwrite(mpa_unique, "D:/Thesis/Data/COMPLETE/initial/mpa_unique.csv")
 
 #add revenue
-mpa_rev <- fread("D:/Thesis/Data/COMPLETE/mpa_unique.csv") %>% 
-    mutate(Rev_RRP_30 = RRP30*TOTALCLEARED) %>% 
-    mutate(Rev_LMP = LMP*TOTALCLEARED) %>% 
-    mutate(Rev_LMP0 = pmax(LMP, 0)*TOTALCLEARED) %>% 
+mpa_rev <- fread("D:/Thesis/Data/COMPLETE/initial/mpa_unique.csv") %>% 
+    mutate(DISPATCHMWH = INITIALMW/12) %>% 
+    mutate(Rev_RRP_30 = RRP30*DISPATCHMWH) %>% 
+    mutate(Rev_LMP = LMP*DISPATCHMWH) %>% 
+    mutate(Rev_LMP0 = pmax(LMP, 0)*DISPATCHMWH) %>% 
     mutate(Rev_DIF = Rev_LMP - Rev_RRP_30) %>%   #how much you benefit from change to LMP system
     mutate(Rev_DIF_0 = pmax(Rev_LMP, Rev_LMP0) - Rev_RRP_30) %>%  #assume no neg LMP (no neg bids)
     mutate(STATE = case_when(REGIONID == "QLD1" ~ "QLD",
@@ -144,4 +144,4 @@ mpa_rev <- fread("D:/Thesis/Data/COMPLETE/mpa_unique.csv") %>%
 
 
 
-fwrite(mpa_rev, "D:/Thesis/Data/mpa_cleaned.csv")
+fwrite(mpa_rev, "D:/Thesis/Data/mpa_cleaned_initial.csv")
