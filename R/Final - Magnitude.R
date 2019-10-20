@@ -58,7 +58,8 @@ congested %>% group_by(year = floor_date(settlementdate, "year")) %>%
     geom_line(size = 2) +
     scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0,1)) +
     labs(title = "Percentage of Time NEM is Congested", y = "Percent", x = "Year") +
-    ggsave("output/Charts/Perc Congested NEM.png", width = 10)
+    theme(text = element_text(size = 12))+
+    ggsave("output/Charts/Perc Congested NEM.png", width = 6)
     
     
 
@@ -88,12 +89,6 @@ congested_duid <-  mpa %>% filter(year(settlementdate) == 2018, (lmp < rrp30)) %
     arrange(-count) %>% mutate(perc = count/(12*24*365))
 congested_duid %>% .[1:10,] %>% fwrite("Output/congestion by duid top 10 - assump no output included.csv")
 
-#most congested generators removing intervals where didn't produce 
-congested_duid_2 <-  mpa %>% filter(year(settlementdate) == 2018, (lmp < rrp30), dispatchmwh > 0) %>% 
-    select(settlementdate, duid, dispatchmwh, station, fuel_type) %>% 
-    group_by(duid) %>% summarise(count = n(), station = station[1], fuel_type = fuel_type[1]) %>% 
-    arrange(-count) %>% mutate(perc = count/(12*24*365)) 
-
 congested_duid_2 %>% .[1:10,] %>% fwrite("Output/congestion by duid top 10.csv")#this is flawed use c_duid above instead as would need each period dispatchmwh to make statetment
 
 
@@ -119,3 +114,27 @@ congested_fuel %>% filter(year(year) < 2019) %>% filter(!(fuel_type %in% c("Batt
     scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0,0.5)) +
     theme(legend.position = "none") +
     ggsave("Output/Charts/Congested_fuel.png", width = 10)
+
+#distribution of congestion
+congested_duid_2 <-  mpa %>% filter(year(settlementdate) == 2018, (lmp < rrp30), dispatchmwh > 0) %>% #removes all duids not congested
+    select(settlementdate, station, fuel_type) %>%
+    unique() %>% 
+    group_by(station) %>% summarise(count = n(), fuel_type = fuel_type[1]) %>% 
+    arrange(-count) %>% mutate(perc = count/(12*24*365))
+
+uncongested_duid <- mpa %>% filter(year(settlementdate) == 2018, dispatchmwh > 0) %>% #remove old/new gens & non productive
+    select(station, fuel_type) %>% unique() %>% #get unique data for station
+    filter(!(station %in% congested_duid_2$station)) %>% #remove all congested 
+    mutate(perc = 0) #empty! :O t/f don;t need to merge
+
+mpa %>% filter(station == "Bodangora Wind Farm")
+
+congested_duid_2 %>% 
+    ggplot(aes(perc*100, fill = fuel_type))+
+    geom_histogram() +
+    labs(title = "Percentage of Time Each Generator is Overcompensated", 
+         y = "# Generators", x = "Percent", fill = "Fuel Type") +
+    ggsave("Output/Charts/Distribution of Overcomp 2018.png", width = 10)
+    
+
+congested_duid_2 %>% .[1:10,] %>% select(-count) %>% fwrite("Output/congestion by duid top 10.csv")#this is flawed use c_duid above instead as would need each period dispatchmwh to make statetment

@@ -1,11 +1,11 @@
-duid,count,station,fuel_type,perc
-LKBONNY2,16650,Lake Bonney Stage 2,Wind,0.158390410958904
-LKBONNY3,16457,Lake Bonney Stage 3,Wind,0.156554414003044
-SNOWNTH1,14496,Snowtown North Wind Farm,Wind,0.137899543378995
-SNOWSTH1,14496,Snowtown South Wind Farm,Wind,0.137899543378995
-HDWF1,13861,Hornsdale Wind Farm,Wind,0.131858828006088
-HDWF2,13860,Hornsdale Wind Farm,Wind,0.131849315068493
-HDWF3,13857,Hornsdale Wind Farm,Wind,0.131820776255708
-HALLWF2,13758,Hallett Wind Farm,Wind,0.13087899543379
-NBHWF1,13657,North Brown Hill Wind Farm,Wind,0.129918188736682
-BLUFF1,13615,The Bluff Wind Farm,Wind,0.129518645357686
+station,fuel_type,perc
+Lake Bonney Stage 2,Wind,0.155983637747336
+Lake Bonney Stage 3,Wind,0.151522070015221
+Snowtown North Wind Farm,Wind,0.136339421613394
+Snowtown South Wind Farm,Wind,0.136320395738204
+Hallett Wind Farm,Wind,0.131659056316591
+Hornsdale Wind Farm,Wind,0.131126331811263
+North Brown Hill Wind Farm,Wind,0.129918188736682
+The Bluff Wind Farm,Wind,0.129509132420091
+Snowtown Wind Farm,Wind,0.128491248097412
+Clements Gap Wind Farm,Wind,0.127064307458143

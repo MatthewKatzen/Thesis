@@ -37,3 +37,5 @@ mpa %>% filter(year(settlementdate) == 2018) %>%
     group_by(station, fuel_type) %>% summ_all() %>% 
     select(station, fuel_type, quantity, dif_ave, dif_ave_0, dif_total, dif_total_0) %>% 
     arrange(dif_total) %>% .[1:10,]
+
+#desnity of congestion perc

@@ -2,13 +2,14 @@ library(tidyverse)
 library(tidyr)
 library(lubridate)
 library(data.table)
+library(janitor)
 ###DISSORDERLY BIDDING
 
 #Black coal QLD pushing out more efficient generators
 mpa %>% filter(fuel_type == "Black Coal", year(settlementdate) > 2017, state == "QLD") %>%
     group_by(duid, day = floor_date(settlementdate, "day")) %>% 
-    summarise(SUMdiff = sum(rev_dif), state = state[1], fuel_type = fuel_type[1]) %>% 
-    arrange(SUMdiff) 
+    summ_all() %>% 
+    arrange(-dif_total) %>% data.frame()
 
 #when is CPP_4 LMP v low on 2019/6/4?
 mpa %>% filter(duid == "CPP_4",
@@ -47,3 +48,14 @@ bids_temp_2 <- bids.fun("201906", mpa_temp$duid) %>%
 
 bids_temp_2 %>% filter(ymd_hms(OFFERDATE) > ymd_hms("2019-06-04 00:00:00")) %>%
     select(duid) %>% unique() %>% as.list()
+
+#LMP v LMP0
+mpa_db_event1 <- mpa %>% filter(floor_date(settlementdate, "day") == ymd_hms("2019-06-04 00:00:00 UTC"), 
+                                state == "QLD") %>%
+    group_by(duid, day = floor_date(settlementdate, "day"), fuel_type) %>% 
+    summ_all() %>% 
+    arrange(-dif_total) %>% data.frame()
+
+mpa_db_event1 %>% select(duid, fuel_type, quantity, dif_ave, dif_ave_0, dif_total, dif_total_0) %>% 
+    fwrite("Output/DB effects by duid.csv")
+
