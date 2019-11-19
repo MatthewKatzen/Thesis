@@ -1,8 +1,8 @@
 # Economics Honours Thesis
+Revisiting Optimal Pricing in Electrical Networks over Space and Time: Mispricing in Australia’s Zonal Market\
 
 By Matthew Katzen\
 Supervised by Gordon Leslie\
-Preliminary Title: Is the NEM’s Market Design encouraging inefficient generator bidding?
 
 DO NOT RUN CODE IF YOU DO NOT HAVE EXTERNAL HARDRRIVE SET UP TO STORE LARGE DATASETS (1+ GB each)
   
