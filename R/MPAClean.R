@@ -1,3 +1,6 @@
+#Clean LMP files given to us by AEMO
+#Final file used is mpa_final.csv
+
 library(tidyverse)
 library(tidyr)
 library(lubridate)
@@ -20,7 +23,7 @@ for (i in year){
 }
 
 # MPA
-data_location <- "D:/Thesis/Data/MPA2"
+data_location <- "D:/Thesis/Data/MPA"
 files <- paste0(data_location, "/", list.files(data_location))
 
 mpa_cleaned <-  files %>% map(~ read.csv(.x, stringsAsFactors = FALSE)) %>% 
@@ -30,10 +33,10 @@ mpa_cleaned <-  files %>% map(~ read.csv(.x, stringsAsFactors = FALSE)) %>%
     mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE)) %>% 
     arrange(SETTLEMENTDATE)
 
-fwrite(mpa, "D:/Thesis/Data/MPA2/mpa_cleaned.csv")
+fwrite(mpa, "D:/Thesis/Data/MPA/mpa_cleaned.csv")
 
 # RRP
-rrpfull <- yearmonths %>% map(~ rrp.fun(.x)) %>% 
+rrpfull <- yearmonths %>% map(~ rrp_fun(.x)) %>% 
     group_by(INTERVAL = cut(SETTLEMENTDATE, breaks = "30 min"), REGIONID) %>% #add RRP30
     mutate(RRP30 = mean(RRP)) %>% 
     ungroup() %>% 
@@ -54,7 +57,7 @@ for (i in year){
         temp <- paste0(i, months)
     }
     file_location <- paste0("D:/Thesis/Data/DISPATCH/yearly/dispatch_initial_", i, ".csv")
-    dispatchtemp <- temp %>% map(~ dispatch.fun(.x)) %>% 
+    dispatchtemp <- temp %>% map(~ dispatch_fun(.x)) %>% 
         rbindlist()  
     fwrite(dispatchtemp, file_location)
 }
@@ -86,7 +89,7 @@ fwrite(age_gen, "D:/Thesis/Data/age_gen.csv")
 
 ### MERGE
 
-mpa_nodisp <- fread("D:/Thesis/Data/MPA2/mpa_cleaned.csv", stringsAsFactors = FALSE, drop = 1) %>% #mpa
+mpa_nodisp <- fread("D:/Thesis/Data/MPA/mpa_cleaned.csv", stringsAsFactors = FALSE, drop = 1) %>% #mpa
     mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE)) %>% 
     filter(SETTLEMENTDATE %within% interval(ymd_hms("2009-07-01 00:05:00"), 
                                             ymd_hms("2019-07-01 00:00:00"))) %>% 
@@ -144,4 +147,4 @@ mpa_rev <- fread("D:/Thesis/Data/COMPLETE/initial/mpa_unique.csv") %>%
 
 
 
-fwrite(mpa_rev, "D:/Thesis/Data/mpa_cleaned_initial.csv")
+fwrite(mpa_rev, "D:/Thesis/Data/mpa_final.csv")

@@ -11,7 +11,7 @@ library(tidyverse)
 library(openxlsx)
 library(sqldf)
 library(data.table)
-setwd("C:/Users/Matthew/Google Drive/Uni/19/Thesis/Analysis/Dissordely Bidding")
+setwd("C:/Users/Matthew/Google Drive/Uni/19/Thesis/Analysis/Mispricing")
 external.data.location <- "D:/Thesis/Data" #for big data
 #"C:/Users/Matthew/Downloads/Temp"
 #"D:/Thesis/Data"

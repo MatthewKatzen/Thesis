@@ -12,7 +12,7 @@ library(padr)
 
 ### Get DATA
 
-mpa <- fread("D:/Thesis/Data/mpa_cleaned_initial.csv") %>% 
+mpa <- fread("D:/Thesis/Data/mpa_final.csv") %>% 
     mutate(settlementdate = ymd_hms(settlementdate))
 
 #add all sumarised cols of interest
