@@ -2,6 +2,17 @@
 # Difference in revenue by fuel source in 2018
 # Who wins and loses in 2018?
 
+setwd("C:/Users/Matthew/Google Drive/Uni/19/Thesis/Analysis/Mispricing")
+library(tidyverse)
+library(tidyr)
+library(lubridate)
+library(data.table)
+library(padr)
+
+### Get DATA
+
+mpa <- fread("D:/Thesis/Data/mpa_final.csv") %>% 
+    mutate(settlementdate = ymd_hms(settlementdate))
 
 #20
 mpa %>% filter(year(settlementdate) == 2018) %>% 

@@ -1,5 +1,17 @@
 # Trends
 
+setwd("C:/Users/Matthew/Google Drive/Uni/19/Thesis/Analysis/Mispricing")
+library(tidyverse)
+library(tidyr)
+library(lubridate)
+library(data.table)
+library(padr)
+
+### Get DATA
+
+mpa <- fread("D:/Thesis/Data/mpa_final.csv") %>% 
+    mutate(settlementdate = ymd_hms(settlementdate))
+
 ### TOTAL REVENUE CHANGES 
 
 mpa_year_fuel_region <- mpa %>%  filter(settlementdate < ymd_hms("2019-01-01 00:00:00 UTC"), 

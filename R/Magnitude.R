@@ -3,7 +3,7 @@
 # How often is the network congested?
 # What states?
 # What gens were most congested?
-setwd("C:/Users/Matthew/Google Drive/Uni/19/Thesis/Analysis/Dissordely Bidding")
+setwd("C:/Users/Matthew/Google Drive/Uni/19/Thesis/Analysis/Mispricing")
 library(tidyverse)
 library(tidyr)
 library(lubridate)
