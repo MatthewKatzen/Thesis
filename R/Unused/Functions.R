@@ -1,3 +1,9 @@
+#Functions for retrieving data from NEMWEB
+#RHS, MV, Constraint Equations
+
+#Functions for cleaning
+
+
 #install.packages('tidyverse')
 #install.packages('openxlsx')
 #install.packages('sqldf')

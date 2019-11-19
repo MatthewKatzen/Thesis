@@ -180,3 +180,5 @@ capacity_total %>% group_by(Year) %>% summarise(sum = sum(capacity)) %>%
     ggtitle("Wind Farm Capacity in South Australian")+
     theme(text = element_text(size = 12))+
     ggsave('Output/Charts/SA Wind Capacity.png', width = 6)
+
+capacity_total %>% select(-c(value.x, value.y)) %>% arrange(variable)

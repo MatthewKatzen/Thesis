@@ -132,7 +132,7 @@ mpa %>% filter(station == "Bodangora Wind Farm")
 congested_duid_2 %>% 
     ggplot(aes(perc*100, fill = fuel_type))+
     geom_histogram() +
-    labs(title = "Percentage of Time Each Generator is Overcompensated", 
+    labs(title = "Percentage of Time Each Generator is Overcompensated (2018)", 
          y = "# Generators", x = "Percent", fill = "Fuel Type") +
     ggsave("Output/Charts/Distribution of Overcomp 2018.png", width = 10)
     
