@@ -11,7 +11,8 @@ setwd("C:/Users/Matthew/Google Drive/Uni/19/Thesis/Analysis/Mispricing")
 external_data_location <- "D:/Thesis/Data" #for big data
 
 ###RRP
-rrp_fun <- function(yearmonth){
+#input: yearmonth for file download, int for 0/1 for intervention pricing
+rrp_fun <- function(yearmonth, int = 0){
     external_data_location <- "D:/Thesis/Data/RRP" #for big data
     year <- substr(yearmonth, 1, 4)
     month <- substr(yearmonth, 5, 6)
@@ -28,8 +29,8 @@ rrp_fun <- function(yearmonth){
               exdir = external_data_location)
     }
     rrp <- fread(csv_name, sep=",", stringsAsFactors = FALSE) %>% 
-        filter(INTERVENTION == 0) %>% 
-        select(SETTLEMENTDATE, REGIONID, RRP) %>% 
+        filter(INTERVENTION == int) %>%  #intervention
+        select(SETTLEMENTDATE, REGIONID, INTERVENTION, RRP) %>% 
         mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
     
     if(url != 0){
@@ -57,8 +58,8 @@ dispatch_fun <- function(yearmonth){
     }
     dispatch <- fread(csv_name, sep=",", skip=1, stringsAsFactors = FALSE)
     dispatch <- dispatch %>%
-        filter(INTERVENTION == 0) %>%
-        select(DUID, SETTLEMENTDATE, INITIALMW) %>%
+        filter(INTERVENTION == 0) %>% #chooses whether intevention or non priced
+        select(DUID, SETTLEMENTDATE, INTERVENTION, INITIALMW) %>%
         mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE))
     if(url != 0){
         unlink(temp) #delete zip

@@ -148,3 +148,22 @@ mpa_rev <- fread("D:/Thesis/Data/COMPLETE/initial/mpa_unique.csv") %>%
 
 
 fwrite(mpa_rev, "D:/Thesis/Data/mpa_final.csv")
+
+
+
+
+
+#intervention pricing
+rrp_int <- yearmonths %>% map(~ rrp_fun(.x, int = 1)) %>% 
+    rbindlist() %>% 
+    clean_names
+
+fwrite(rrpfull_int, "D:/Thesis/Data/RRP/rrpfull_int.csv")
+
+rrpfull <- fread("D:/Thesis/Data/RRP/rrpfull.csv") %>% 
+    mutate(SETTLEMENTDATE = ymd_hms(SETTLEMENTDATE)) %>% 
+    clean_names() %>% 
+    mutate(intervention = 0) %>% 
+    select(-rrp30)
+
+rrpfull_int <- rbind(head(rrp_int),head(rrpfull))
